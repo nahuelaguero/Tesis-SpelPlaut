@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import connectDB from "@/lib/mongodb";
+import Reserva from "@/models/Reserva";
 import { ApiResponse } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -36,12 +37,19 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    // Por ahora devolvemos un array vacío ya que no tenemos el modelo Reserva implementado
-    // TODO: Cuando implementemos el modelo Reserva, aquí haremos:
-    // const reservas = await Reserva.find({ usuario: decoded.userId }).populate('cancha');
-    console.log("Usuario autenticado para reservas:", decoded.userId);
+    console.log(
+      `🔍 Buscando reservas para usuario: ${decoded.userId} (${decoded.email})`
+    );
 
-    const reservas: never[] = [];
+    // Buscar las reservas del usuario
+    const reservas = await Reserva.find({ usuario_id: decoded.userId })
+      .populate("cancha_id", "nombre tipo ubicacion precio_por_hora")
+      .sort({ fecha_reserva: -1, hora_inicio: 1 });
+
+    console.log(`📊 Reservas encontradas: ${reservas.length}`);
+    if (reservas.length > 0) {
+      console.log("📝 Primeras reservas:", reservas.slice(0, 2));
+    }
 
     return NextResponse.json<ApiResponse>({
       success: true,

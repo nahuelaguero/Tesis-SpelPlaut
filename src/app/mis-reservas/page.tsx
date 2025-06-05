@@ -25,18 +25,18 @@ import {
 
 interface Reserva {
   _id: string;
-  cancha: {
+  cancha_id: {
     _id: string;
     nombre: string;
-    tipo: string;
     ubicacion: string;
   };
-  fecha: string;
+  fecha_reserva: string;
   hora_inicio: string;
   hora_fin: string;
+  duracion_horas: number;
   precio_total: number;
   estado: "confirmada" | "pendiente" | "cancelada";
-  fecha_reserva: string;
+  fecha_creacion: string;
 }
 
 export default function MisReservasPage() {
@@ -183,11 +183,11 @@ export default function MisReservasPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-xl font-bold text-gray-900">
-                          {reserva.cancha.nombre}
+                          {reserva.cancha_id.nombre}
                         </CardTitle>
                         <CardDescription className="flex items-center text-gray-700 font-medium mt-1">
                           <MapPin className="h-4 w-4 mr-1" />
-                          {reserva.cancha.ubicacion}
+                          {reserva.cancha_id.ubicacion}
                         </CardDescription>
                       </div>
                       <Badge
@@ -214,7 +214,7 @@ export default function MisReservasPage() {
                         <div>
                           <p className="font-semibold text-gray-900">Fecha</p>
                           <p className="text-sm text-gray-700 font-medium capitalize">
-                            {formatDate(reserva.fecha)}
+                            {formatDate(reserva.fecha_reserva)}
                           </p>
                         </div>
                       </div>
@@ -232,9 +232,12 @@ export default function MisReservasPage() {
                       <div className="flex items-center space-x-2">
                         <User className="h-5 w-5 text-emerald-600" />
                         <div>
-                          <p className="font-semibold text-gray-900">Tipo</p>
+                          <p className="font-semibold text-gray-900">
+                            Duración
+                          </p>
                           <p className="text-sm text-gray-700 font-medium">
-                            {reserva.cancha.tipo}
+                            {reserva.duracion_horas} hora
+                            {reserva.duracion_horas !== 1 ? "s" : ""}
                           </p>
                         </div>
                       </div>

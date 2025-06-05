@@ -161,8 +161,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🏟️ Estado de la cancha ${cancha.nombre}: ${cancha.estado}`);
-
     if (cancha.estado !== "disponible") {
       return NextResponse.json<ApiResponse>(
         {
@@ -188,10 +186,6 @@ export async function POST(request: NextRequest) {
     // Validar que la fecha sea futura
     const fechaReservaString = fecha_reserva; // "YYYY-MM-DD"
     const todayString = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
-
-    console.log(
-      `📅 Validando fecha: ${fechaReservaString} vs hoy: ${todayString}`
-    );
 
     if (fechaReservaString < todayString) {
       return NextResponse.json<ApiResponse>(
@@ -290,6 +284,10 @@ export async function POST(request: NextRequest) {
 
     // Calcular duración en horas
     const duracion_horas = (finMinutos - inicioMinutos) / 60;
+
+    console.log(
+      `🔒 Creando reserva para usuario: ${decoded.userId} (${decoded.email})`
+    );
 
     // Crear la reserva
     const nuevaReserva = new Reserva({
