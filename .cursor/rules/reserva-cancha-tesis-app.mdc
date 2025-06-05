@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+debe ser una app completa.
+Mejor calidad de codigo revisada.
+reutilizar componentes y codigo.
+User typescript. No usar any()
+Que sea en espanhol los textos UI y el codigo en ingles.
+Debe ser PWA con Next JS.
