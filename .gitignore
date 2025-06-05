@@ -39,3 +39,65 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs
+logs
+*.log
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# temp files
+*.tmp
+*.temp
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+
+# MongoDB data (if running locally)
+data/
+
+# PWA files (generated)
+public/sw.js
+public/workbox-*.js
+
+# Build cache
+.cache/
+
+# Temporary test files
+test-results/
+coverage/
+
+# Package lock files (keeping pnpm-lock.yaml only)
+package-lock.json
+yarn.lock
+
+# Local environment config
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cookies and sessions
+cookies.txt
+sessions/
