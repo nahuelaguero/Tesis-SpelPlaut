@@ -10,8 +10,15 @@ export interface IReserva extends Document {
   duracion_horas: number;
   precio_total: number;
   estado: "pendiente" | "confirmada" | "cancelada" | "completada";
-  metodo_pago?: "efectivo" | "transferencia" | "tarjeta";
+  metodo_pago?:
+    | "efectivo"
+    | "bancard_card"
+    | "bancard_apple_pay"
+    | "bancard_google_pay"
+    | "bancard_qr";
   pagado: boolean;
+  transaction_id?: string;
+  payment_details?: Record<string, unknown>;
   notas?: string;
   fecha_creacion: Date;
   fecha_actualizacion: Date;
@@ -61,11 +68,26 @@ const ReservaSchema = new Schema<IReserva>(
     },
     metodo_pago: {
       type: String,
-      enum: ["efectivo", "transferencia", "tarjeta"],
+      enum: [
+        "efectivo",
+        "bancard_card",
+        "bancard_apple_pay",
+        "bancard_google_pay",
+        "bancard_qr",
+      ],
+      required: true,
     },
     pagado: {
       type: Boolean,
       default: false,
+    },
+    transaction_id: {
+      type: String,
+      default: null,
+    },
+    payment_details: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
     notas: {
       type: String,

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import PaymentMethods from "@/components/PaymentMethods";
 import {
   MapPin,
   Star,
@@ -57,9 +58,8 @@ export default function CanchaDetailsPage() {
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
   const [notas, setNotas] = useState("");
-  const [metodoPago, setMetodoPago] = useState<
-    "efectivo" | "transferencia" | "tarjeta"
-  >("efectivo");
+  const [metodoPago, setMetodoPago] = useState<string>("efectivo");
+  const [showPayments, setShowPayments] = useState(false);
 
   useEffect(() => {
     const fetchCancha = async () => {
@@ -392,32 +392,28 @@ export default function CanchaDetailsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="metodo-pago">Método de pago</Label>
-                  <select
-                    id="metodo-pago"
-                    value={metodoPago}
-                    onChange={(e) =>
-                      setMetodoPago(
-                        e.target.value as
-                          | "efectivo"
-                          | "transferencia"
-                          | "tarjeta"
-                      )
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    <option value="efectivo" className="text-gray-900">
-                      Efectivo
-                    </option>
-                    <option value="transferencia" className="text-gray-900">
-                      Transferencia
-                    </option>
-                    <option value="tarjeta" className="text-gray-900">
-                      Tarjeta
-                    </option>
-                  </select>
-                </div>
+                {/* Método de pago */}
+                {showPayments ? (
+                  <PaymentMethods
+                    amount={calculateTotal()}
+                    selectedMethod={metodoPago}
+                    onPaymentSelect={setMetodoPago}
+                  />
+                ) : (
+                  <div>
+                    <Label htmlFor="metodo-pago">Método de pago</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => setShowPayments(true)}
+                    >
+                      {metodoPago === "efectivo"
+                        ? "💵 Efectivo"
+                        : `💳 ${metodoPago}`}
+                    </Button>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="notas">Notas adicionales</Label>

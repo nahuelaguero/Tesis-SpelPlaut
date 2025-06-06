@@ -289,6 +289,24 @@ export async function POST(request: NextRequest) {
       `🔒 Creando reserva para usuario: ${decoded.userId} (${decoded.email})`
     );
 
+    // Validar método de pago
+    const metodosValidos = [
+      "efectivo",
+      "bancard_card",
+      "bancard_apple_pay",
+      "bancard_google_pay",
+      "bancard_qr",
+    ];
+    if (metodo_pago && !metodosValidos.includes(metodo_pago)) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Método de pago no válido",
+        },
+        { status: 400 }
+      );
+    }
+
     // Crear la reserva
     const nuevaReserva = new Reserva({
       cancha_id,
