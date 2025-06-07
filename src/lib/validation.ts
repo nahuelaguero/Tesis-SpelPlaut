@@ -208,13 +208,17 @@ export function validateForm(
   }
 
   // Validaciones especiales
-  if (schema === validationSchemas.changePassword) {
+  if ("contrasena_actual" in schema && "nueva_contrasena" in schema) {
     if (data.nueva_contrasena !== data.confirmar_contrasena) {
       errors.confirmar_contrasena = "Las contraseñas no coinciden";
     }
   }
 
-  if (schema === validationSchemas.cancha) {
+  if (
+    "descripcion" in schema &&
+    "tipo_cancha" in schema &&
+    "horario_apertura" in schema
+  ) {
     const apertura = data.horario_apertura as string;
     const cierre = data.horario_cierre as string;
 
@@ -224,7 +228,7 @@ export function validateForm(
     }
   }
 
-  if (schema === validationSchemas.reserva) {
+  if ("fecha" in schema && "hora_inicio" in schema && "hora_fin" in schema) {
     const inicio = data.hora_inicio as string;
     const fin = data.hora_fin as string;
 

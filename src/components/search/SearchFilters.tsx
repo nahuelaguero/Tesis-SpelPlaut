@@ -43,7 +43,7 @@ export function SearchFiltersComponent({
           `${location.coordinates.latitude}, ${location.coordinates.longitude}`,
       });
     }
-  }, [location]);
+  }, [location, filters, onFiltersChange]);
 
   const handleLocationSearch = async () => {
     if (!locationSearch.trim()) return;

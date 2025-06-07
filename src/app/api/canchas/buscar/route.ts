@@ -11,7 +11,24 @@ import {
   createSuccessResponse,
   createErrorResponse,
   ValidationError,
+  AppError,
 } from "@/lib/error-handler";
+
+// Tipo para los datos crudos de MongoDB
+interface CanchaRaw {
+  _id: unknown;
+  descripcion: string;
+  tipo_cancha: string;
+  ubicacion: string;
+  precio_por_hora: number;
+  capacidad_jugadores: number;
+  horario_apertura: string;
+  horario_cierre: string;
+  disponible: boolean;
+  coordenadas?: { latitude: number; longitude: number };
+  calificacion_promedio?: number;
+  total_reviews?: number;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,23 +66,27 @@ export async function GET(request: NextRequest) {
     };
 
     // Obtener todas las canchas disponibles
-    const canchasRaw = await Cancha.find({ disponible: true }).lean();
+    const canchasRaw = (await Cancha.find({
+      disponible: true,
+    }).lean()) as unknown as CanchaRaw[];
 
     // Convertir a formato CanchaConDistancia
-    const canchas: CanchaConDistancia[] = canchasRaw.map((cancha: any) => ({
-      _id: cancha._id.toString(),
-      descripcion: cancha.descripcion,
-      tipo_cancha: cancha.tipo_cancha,
-      ubicacion: cancha.ubicacion,
-      precio_por_hora: cancha.precio_por_hora,
-      capacidad_jugadores: cancha.capacidad_jugadores,
-      horario_apertura: cancha.horario_apertura,
-      horario_cierre: cancha.horario_cierre,
-      disponible: cancha.disponible,
-      coordenadas: cancha.coordenadas,
-      calificacion_promedio: cancha.calificacion_promedio,
-      total_reviews: cancha.total_reviews,
-    }));
+    const canchas: CanchaConDistancia[] = canchasRaw.map(
+      (cancha: CanchaRaw) => ({
+        _id: cancha._id?.toString() || "",
+        descripcion: cancha.descripcion,
+        tipo_cancha: cancha.tipo_cancha,
+        ubicacion: cancha.ubicacion,
+        precio_por_hora: cancha.precio_por_hora,
+        capacidad_jugadores: cancha.capacidad_jugadores,
+        horario_apertura: cancha.horario_apertura,
+        horario_cierre: cancha.horario_cierre,
+        disponible: cancha.disponible,
+        coordenadas: cancha.coordenadas,
+        calificacion_promedio: cancha.calificacion_promedio,
+        total_reviews: cancha.total_reviews,
+      })
+    );
 
     // Obtener coordenadas del usuario si proporciona ubicación
     let userLocation = undefined;
@@ -113,10 +134,19 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error en búsqueda de canchas:", error);
-    return NextResponse.json(
-      createErrorResponse("Error en búsqueda de canchas", "SEARCH_ERROR"),
-      { status: 500 }
-    );
+    const apiError =
+      error instanceof AppError
+        ? error
+        : new AppError(
+            "Error en búsqueda de canchas",
+            500,
+            true,
+            "SEARCH_ERROR"
+          );
+
+    return NextResponse.json(createErrorResponse(apiError), {
+      status: apiError.statusCode,
+    });
   }
 }
 
@@ -149,22 +179,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener canchas
-    const canchasRaw = await Cancha.find({ disponible: true }).lean();
+    const canchasRaw = (await Cancha.find({
+      disponible: true,
+    }).lean()) as unknown as CanchaRaw[];
 
-    const canchas: CanchaConDistancia[] = canchasRaw.map((cancha: any) => ({
-      _id: cancha._id.toString(),
-      descripcion: cancha.descripcion,
-      tipo_cancha: cancha.tipo_cancha,
-      ubicacion: cancha.ubicacion,
-      precio_por_hora: cancha.precio_por_hora,
-      capacidad_jugadores: cancha.capacidad_jugadores,
-      horario_apertura: cancha.horario_apertura,
-      horario_cierre: cancha.horario_cierre,
-      disponible: cancha.disponible,
-      coordenadas: cancha.coordenadas,
-      calificacion_promedio: cancha.calificacion_promedio,
-      total_reviews: cancha.total_reviews,
-    }));
+    const canchas: CanchaConDistancia[] = canchasRaw.map(
+      (cancha: CanchaRaw) => ({
+        _id: cancha._id?.toString() || "",
+        descripcion: cancha.descripcion,
+        tipo_cancha: cancha.tipo_cancha,
+        ubicacion: cancha.ubicacion,
+        precio_por_hora: cancha.precio_por_hora,
+        capacidad_jugadores: cancha.capacidad_jugadores,
+        horario_apertura: cancha.horario_apertura,
+        horario_cierre: cancha.horario_cierre,
+        disponible: cancha.disponible,
+        coordenadas: cancha.coordenadas,
+        calificacion_promedio: cancha.calificacion_promedio,
+        total_reviews: cancha.total_reviews,
+      })
+    );
 
     // Obtener ubicación del usuario
     let userLocation = undefined;
@@ -224,18 +258,21 @@ export async function POST(request: NextRequest) {
     console.error("Error en búsqueda avanzada de canchas:", error);
 
     if (error instanceof ValidationError) {
-      return NextResponse.json(
-        createErrorResponse(error.message, "VALIDATION_ERROR"),
-        { status: 400 }
-      );
+      return NextResponse.json(createErrorResponse(error), { status: 400 });
     }
 
-    return NextResponse.json(
-      createErrorResponse(
-        "Error en búsqueda avanzada de canchas",
-        "SEARCH_ERROR"
-      ),
-      { status: 500 }
-    );
+    const apiError =
+      error instanceof AppError
+        ? error
+        : new AppError(
+            "Error en búsqueda avanzada de canchas",
+            500,
+            true,
+            "SEARCH_ERROR"
+          );
+
+    return NextResponse.json(createErrorResponse(apiError), {
+      status: apiError.statusCode,
+    });
   }
 }

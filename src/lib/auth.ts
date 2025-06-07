@@ -1,8 +1,9 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import * as jwt from "jsonwebtoken";
+import * as bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { AuthenticationError, AuthorizationError } from "./error-handler";
+import type { StringValue } from "ms";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
 const JWT_REFRESH_SECRET =
@@ -15,6 +16,12 @@ export interface JWTPayload {
   email: string;
   rol: "usuario" | "propietario_cancha" | "admin";
   cancha_id?: string;
+  tokenId?: string;
+  family?: string;
+  iat?: number;
+  exp?: number;
+  iss?: string;
+  aud?: string;
 }
 
 export interface TokenPair {
@@ -27,6 +34,10 @@ export interface RefreshTokenData {
   userId: string;
   tokenId: string;
   family?: string;
+  iat?: number;
+  exp?: number;
+  iss?: string;
+  aud?: string;
 }
 
 // Rate limiting por IP
@@ -62,17 +73,29 @@ export function generateTokenPair(payload: JWTPayload): TokenPair {
   const tokenId = generateSecureId();
   const family = generateSecureId();
 
-  const accessToken = jwt.sign({ ...payload, tokenId, family }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+  const accessTokenPayload = {
+    ...payload,
+    tokenId,
+    family,
+  };
+
+  const accessToken = jwt.sign(accessTokenPayload, JWT_SECRET as string, {
+    expiresIn: JWT_EXPIRES_IN as StringValue,
     issuer: "spelplaut",
     audience: "spelplaut-users",
   });
 
+  const refreshTokenPayload: RefreshTokenData = {
+    userId: payload.userId,
+    tokenId,
+    family,
+  };
+
   const refreshToken = jwt.sign(
-    { userId: payload.userId, tokenId, family } as RefreshTokenData,
-    JWT_REFRESH_SECRET,
+    refreshTokenPayload,
+    JWT_REFRESH_SECRET as string,
     {
-      expiresIn: JWT_REFRESH_EXPIRES_IN,
+      expiresIn: JWT_REFRESH_EXPIRES_IN as StringValue,
       issuer: "spelplaut",
       audience: "spelplaut-refresh",
     }
@@ -85,7 +108,7 @@ export function generateTokenPair(payload: JWTPayload): TokenPair {
 
 export function verifyAccessToken(token: string): JWTPayload {
   try {
-    const payload = jwt.verify(token, JWT_SECRET, {
+    const payload = jwt.verify(token, JWT_SECRET as string, {
       issuer: "spelplaut",
       audience: "spelplaut-users",
     }) as JWTPayload;
@@ -104,7 +127,7 @@ export function verifyAccessToken(token: string): JWTPayload {
 
 export function verifyRefreshToken(token: string): RefreshTokenData {
   try {
-    const payload = jwt.verify(token, JWT_REFRESH_SECRET, {
+    const payload = jwt.verify(token, JWT_REFRESH_SECRET as string, {
       issuer: "spelplaut",
       audience: "spelplaut-refresh",
     }) as RefreshTokenData;
@@ -237,10 +260,7 @@ export function getClientIp(request: Request): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback-secret"
-    ) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET as string) as JWTPayload;
 
     return decoded;
   } catch (error) {
