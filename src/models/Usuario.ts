@@ -13,6 +13,7 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
       required: [true, "El email es requerido"],
       lowercase: true,
       trim: true,
+      unique: true,
     },
     telefono: {
       type: String,
@@ -66,8 +67,7 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
   }
 );
 
-// Crear índices únicos
-usuarioSchema.index({ email: 1 }, { unique: true });
+// El índice único ya está definido en el schema
 
 export default mongoose.models.Usuario ||
   mongoose.model<Usuario>("Usuario", usuarioSchema);
