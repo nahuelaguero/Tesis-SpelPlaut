@@ -102,12 +102,13 @@ export default function Header() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <User className="h-5 w-5 text-gray-700" />
-                  <span className="text-gray-700 font-medium">
-                    {user.nombre_completo}
-                  </span>
-                </div>
+                <Link
+                  href="/perfil"
+                  className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                >
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">{user.nombre_completo}</span>
+                </Link>
                 <Button
                   variant="outline"
                   size="sm"
@@ -183,10 +184,14 @@ export default function Header() {
               <div className="border-t border-gray-200 pt-2">
                 {user ? (
                   <div className="px-3 py-2 space-y-2">
-                    <div className="flex items-center space-x-2 text-gray-700">
+                    <Link
+                      href="/perfil"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
                       <User className="h-5 w-5" />
                       <span>{user.nombre_completo}</span>
-                    </div>
+                    </Link>
                     <Button
                       variant="outline"
                       size="sm"

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Usuario from "@/models/Usuario";
-import Cancha from "@/models/Cancha";
-import Reserva from "@/models/Reserva";
 import { ApiResponse } from "@/types";
 import { verify } from "jsonwebtoken";
 
@@ -49,61 +47,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Obtener estadísticas
-    const [
-      total_usuarios,
-      total_canchas,
-      total_reservas,
-      reservas_hoy,
-      ingresos_mes,
-    ] = await Promise.all([
-      Usuario.countDocuments(),
-      Cancha.countDocuments(),
-      Reserva.countDocuments(),
-      Reserva.countDocuments({
-        fecha: {
-          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          $lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      }),
-      Reserva.aggregate([
-        {
-          $match: {
-            estado: { $in: ["confirmada", "completada"] },
-            fecha_reserva: {
-              $gte: new Date(
-                new Date().getFullYear(),
-                new Date().getMonth(),
-                1
-              ),
-              $lte: new Date(),
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$precio_total" },
-          },
-        },
-      ]),
-    ]);
-
-    const estadisticas = {
-      total_usuarios,
-      total_canchas,
-      total_reservas,
-      reservas_hoy,
-      ingresos_mes: ingresos_mes[0]?.total || 0,
-    };
+    // Obtener todos los usuarios
+    const usuarios = await Usuario.find({})
+      .select("-contrasena_hash -reset_password_token -reset_password_expires")
+      .sort({ fecha_registro: -1 });
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      message: "Estadísticas obtenidas exitosamente",
-      data: estadisticas,
+      message: "Usuarios obtenidos exitosamente",
+      data: { usuarios },
     });
   } catch (error) {
-    console.error("Error obteniendo estadísticas:", error);
+    console.error("Error obteniendo usuarios:", error);
     return NextResponse.json<ApiResponse>(
       {
         success: false,

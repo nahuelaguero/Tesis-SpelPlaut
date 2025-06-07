@@ -11,7 +11,6 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
     email: {
       type: String,
       required: [true, "El email es requerido"],
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -22,7 +21,7 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
     },
     rol: {
       type: String,
-      enum: ["usuario", "admin"],
+      enum: ["usuario", "propietario_cancha", "admin"],
       default: "usuario",
     },
     contrasena_hash: {
@@ -48,14 +47,27 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
       type: Date,
       default: Date.now,
     },
+    reset_password_token: {
+      type: String,
+      default: null,
+    },
+    reset_password_expires: {
+      type: Date,
+      default: null,
+    },
+    cancha_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Cancha",
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Crear índices
-usuarioSchema.index({ email: 1 });
+// Crear índices únicos
+usuarioSchema.index({ email: 1 }, { unique: true });
 
 export default mongoose.models.Usuario ||
   mongoose.model<Usuario>("Usuario", usuarioSchema);

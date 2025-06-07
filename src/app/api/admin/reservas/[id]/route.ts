@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Usuario from "@/models/Usuario";
-import Cancha from "@/models/Cancha";
 import Reserva from "@/models/Reserva";
 import { ApiResponse } from "@/types";
 import { verify } from "jsonwebtoken";
 
-export async function GET(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
+
+    // Await params
+    const { id } = await params;
 
     // Verificar autenticación y permisos de admin
     const token = request.cookies.get("auth-token")?.value;
@@ -49,61 +53,51 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Obtener estadísticas
-    const [
-      total_usuarios,
-      total_canchas,
-      total_reservas,
-      reservas_hoy,
-      ingresos_mes,
-    ] = await Promise.all([
-      Usuario.countDocuments(),
-      Cancha.countDocuments(),
-      Reserva.countDocuments(),
-      Reserva.countDocuments({
-        fecha: {
-          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          $lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      }),
-      Reserva.aggregate([
-        {
-          $match: {
-            estado: { $in: ["confirmada", "completada"] },
-            fecha_reserva: {
-              $gte: new Date(
-                new Date().getFullYear(),
-                new Date().getMonth(),
-                1
-              ),
-              $lte: new Date(),
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$precio_total" },
-          },
-        },
-      ]),
-    ]);
+    const { estado } = await request.json();
 
-    const estadisticas = {
-      total_usuarios,
-      total_canchas,
-      total_reservas,
-      reservas_hoy,
-      ingresos_mes: ingresos_mes[0]?.total || 0,
-    };
+    // Validar estado
+    const estadosValidos = [
+      "pendiente",
+      "confirmada",
+      "cancelada",
+      "completada",
+    ];
+    if (!estadosValidos.includes(estado)) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Estado inválido",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Actualizar la reserva
+    const reservaActualizada = await Reserva.findByIdAndUpdate(
+      id,
+      { estado },
+      { new: true }
+    )
+      .populate("usuario_id", "nombre_completo email telefono")
+      .populate("cancha_id", "nombre ubicacion");
+
+    if (!reservaActualizada) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Reserva no encontrada",
+        },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      message: "Estadísticas obtenidas exitosamente",
-      data: estadisticas,
+      message: "Estado de reserva actualizado exitosamente",
+      data: { reserva: reservaActualizada },
     });
   } catch (error) {
-    console.error("Error obteniendo estadísticas:", error);
+    console.error("Error actualizando reserva:", error);
     return NextResponse.json<ApiResponse>(
       {
         success: false,

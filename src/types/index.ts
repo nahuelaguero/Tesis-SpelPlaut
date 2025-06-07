@@ -5,7 +5,7 @@ export interface Usuario {
   nombre_completo: string;
   email: string;
   telefono: string;
-  rol: "usuario" | "admin";
+  rol: "usuario" | "propietario_cancha" | "admin";
   contrasena_hash: string;
   autenticacion_2FA: boolean;
   preferencias: {
@@ -13,24 +13,29 @@ export interface Usuario {
     notificaciones?: boolean;
   };
   fecha_registro: Date;
+  reset_password_token?: string;
+  reset_password_expires?: Date;
+  cancha_id?: ObjectId; // Solo para propietarios de cancha
 }
 
 export interface Cancha {
   _id?: ObjectId;
   nombre: string;
-  tipo: string;
-  ubicacion: {
-    direccion: string;
-    ciudad: string;
-  };
+  descripcion: string;
+  tipo_cancha: string;
+  ubicacion: string;
   imagenes: string[];
-  precio_hora: number;
-  horarios_disponibles: {
-    dia: string;
-    desde: string;
-    hasta: string;
+  precio_por_hora: number;
+  capacidad_jugadores: number;
+  horario_apertura: string;
+  horario_cierre: string;
+  disponible: boolean;
+  propietario_id: ObjectId;
+  disponibilidad?: {
+    fecha: string;
+    disponible: boolean;
+    motivo?: string; // Razón de la no disponibilidad
   }[];
-  estado: "activo" | "inactivo";
 }
 
 export interface Reserva {
@@ -40,10 +45,9 @@ export interface Reserva {
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
-  estado: "confirmada" | "pendiente" | "cancelada";
-  pagado: boolean;
-  fecha_creacion: Date;
-  notificaciones_enviadas: boolean;
+  precio_total: number;
+  estado: "pendiente" | "confirmada" | "cancelada" | "completada";
+  fecha_reserva: Date;
 }
 
 export interface Pago {

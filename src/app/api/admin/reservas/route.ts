@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Usuario from "@/models/Usuario";
-import Cancha from "@/models/Cancha";
 import Reserva from "@/models/Reserva";
 import { ApiResponse } from "@/types";
 import { verify } from "jsonwebtoken";
@@ -49,61 +47,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Obtener estadísticas
-    const [
-      total_usuarios,
-      total_canchas,
-      total_reservas,
-      reservas_hoy,
-      ingresos_mes,
-    ] = await Promise.all([
-      Usuario.countDocuments(),
-      Cancha.countDocuments(),
-      Reserva.countDocuments(),
-      Reserva.countDocuments({
-        fecha: {
-          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          $lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      }),
-      Reserva.aggregate([
-        {
-          $match: {
-            estado: { $in: ["confirmada", "completada"] },
-            fecha_reserva: {
-              $gte: new Date(
-                new Date().getFullYear(),
-                new Date().getMonth(),
-                1
-              ),
-              $lte: new Date(),
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$precio_total" },
-          },
-        },
-      ]),
-    ]);
-
-    const estadisticas = {
-      total_usuarios,
-      total_canchas,
-      total_reservas,
-      reservas_hoy,
-      ingresos_mes: ingresos_mes[0]?.total || 0,
-    };
+    // Obtener todas las reservas con información del usuario y cancha
+    const reservas = await Reserva.find({})
+      .populate("usuario_id", "nombre_completo email telefono")
+      .populate("cancha_id", "nombre ubicacion")
+      .sort({ fecha_reserva: -1 });
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      message: "Estadísticas obtenidas exitosamente",
-      data: estadisticas,
+      message: "Reservas obtenidas exitosamente",
+      data: { reservas },
     });
   } catch (error) {
-    console.error("Error obteniendo estadísticas:", error);
+    console.error("Error obteniendo reservas:", error);
     return NextResponse.json<ApiResponse>(
       {
         success: false,

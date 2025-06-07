@@ -8,22 +8,20 @@ const canchaSchema = new mongoose.Schema<Cancha>(
       required: [true, "El nombre de la cancha es requerido"],
       trim: true,
     },
-    tipo: {
+    descripcion: {
+      type: String,
+      required: [true, "La descripción es requerida"],
+      trim: true,
+    },
+    tipo_cancha: {
       type: String,
       required: [true, "El tipo de cancha es requerido"],
       trim: true,
     },
     ubicacion: {
-      direccion: {
-        type: String,
-        required: [true, "La dirección es requerida"],
-        trim: true,
-      },
-      ciudad: {
-        type: String,
-        required: [true, "La ciudad es requerida"],
-        trim: true,
-      },
+      type: String,
+      required: [true, "La ubicación es requerida"],
+      trim: true,
     },
     imagenes: [
       {
@@ -31,49 +29,58 @@ const canchaSchema = new mongoose.Schema<Cancha>(
         trim: true,
       },
     ],
-    precio_hora: {
+    precio_por_hora: {
       type: Number,
       required: [true, "El precio por hora es requerido"],
       min: [0, "El precio no puede ser negativo"],
     },
-    horarios_disponibles: [
+    capacidad_jugadores: {
+      type: Number,
+      required: [true, "La capacidad de jugadores es requerida"],
+      min: [1, "La capacidad debe ser al menos 1"],
+    },
+    horario_apertura: {
+      type: String,
+      required: [true, "El horario de apertura es requerido"],
+      match: [
+        /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        "Formato de hora inválido (HH:MM)",
+      ],
+    },
+    horario_cierre: {
+      type: String,
+      required: [true, "El horario de cierre es requerido"],
+      match: [
+        /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        "Formato de hora inválido (HH:MM)",
+      ],
+    },
+    disponible: {
+      type: Boolean,
+      default: true,
+    },
+    propietario_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Usuario",
+      required: [true, "El propietario de la cancha es requerido"],
+    },
+    disponibilidad: [
       {
-        dia: {
+        fecha: {
           type: String,
           required: true,
-          enum: [
-            "lunes",
-            "martes",
-            "miércoles",
-            "jueves",
-            "viernes",
-            "sábado",
-            "domingo",
-          ],
         },
-        desde: {
-          type: String,
+        disponible: {
+          type: Boolean,
           required: true,
-          match: [
-            /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-            "Formato de hora inválido (HH:MM)",
-          ],
+          default: true,
         },
-        hasta: {
+        motivo: {
           type: String,
-          required: true,
-          match: [
-            /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-            "Formato de hora inválido (HH:MM)",
-          ],
+          trim: true,
         },
       },
     ],
-    estado: {
-      type: String,
-      enum: ["activo", "inactivo"],
-      default: "activo",
-    },
   },
   {
     timestamps: true,
@@ -81,8 +88,8 @@ const canchaSchema = new mongoose.Schema<Cancha>(
 );
 
 // Crear índices
-canchaSchema.index({ tipo: 1, estado: 1 });
-canchaSchema.index({ "ubicacion.ciudad": 1 });
+canchaSchema.index({ tipo_cancha: 1, disponible: 1 });
+canchaSchema.index({ ubicacion: 1 });
 
 export default mongoose.models.Cancha ||
   mongoose.model<Cancha>("Cancha", canchaSchema);

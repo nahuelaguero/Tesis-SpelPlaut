@@ -7,8 +7,9 @@ interface Usuario {
   nombre_completo: string;
   email: string;
   telefono: string;
-  rol: "usuario" | "admin";
+  rol: "usuario" | "propietario_cancha" | "admin";
   fecha_registro: string;
+  cancha_id?: string; // Para propietarios de cancha
 }
 
 interface AuthContextType {

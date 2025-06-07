@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
 import Cancha from "@/models/Cancha";
+import Usuario from "@/models/Usuario";
 import { requireAuth, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
+import { sendReservationConfirmation } from "@/lib/email";
 import jwt from "jsonwebtoken";
 
 export async function GET(request: NextRequest) {
@@ -161,7 +163,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (cancha.estado !== "disponible") {
+    if (cancha.estado !== "activo") {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -169,6 +171,28 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Verificar disponibilidad específica de la fecha
+    if (cancha.disponibilidad && cancha.disponibilidad.length > 0) {
+      const disponibilidadFecha = cancha.disponibilidad.find(
+        (d: { fecha: string; disponible: boolean; motivo?: string }) =>
+          d.fecha === fecha_reserva
+      );
+
+      if (disponibilidadFecha && !disponibilidadFecha.disponible) {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            message: `La cancha no está disponible para esta fecha${
+              disponibilidadFecha.motivo
+                ? `: ${disponibilidadFecha.motivo}`
+                : ""
+            }`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Validar formato de horas
@@ -329,6 +353,35 @@ export async function POST(request: NextRequest) {
       { path: "cancha_id", select: "nombre tipo ubicacion" },
       { path: "usuario_id", select: "nombre_completo email" },
     ]);
+
+    // Enviar email de confirmación (de forma asíncrona)
+    try {
+      const usuario = await Usuario.findById(decoded.userId);
+      if (usuario && usuario.email) {
+        const emailSent = await sendReservationConfirmation(
+          usuario.email,
+          usuario.nombre_completo || "Usuario",
+          {
+            canchaName: (nuevaReserva.cancha_id as { nombre: string }).nombre,
+            fecha: fechaReservaDate.toISOString(),
+            horaInicio: hora_inicio,
+            horaFin: hora_fin,
+            precio: Number(precio_total),
+            metodoPago: metodo_pago || "efectivo",
+            reservaId: nuevaReserva._id.toString(),
+          }
+        );
+
+        if (emailSent) {
+          console.log(`📧 Email de confirmación enviado a ${usuario.email}`);
+        } else {
+          console.log(`❌ Error enviando email a ${usuario.email}`);
+        }
+      }
+    } catch (emailError) {
+      console.error("❌ Error enviando email de confirmación:", emailError);
+      // No fallar la reserva por errores de email
+    }
 
     return NextResponse.json<ApiResponse>(
       {

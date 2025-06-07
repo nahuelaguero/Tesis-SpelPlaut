@@ -270,7 +270,10 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button
+                  onClick={() => router.push("/admin/reservas")}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
                   Gestionar Reservas
                 </Button>
               </CardContent>
@@ -289,7 +292,10 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button
+                  onClick={() => router.push("/admin/usuarios")}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
                   Ver Usuarios
                 </Button>
               </CardContent>
@@ -346,7 +352,10 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  onClick={() => router.push("/admin/canchas")}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
                   Ver Canchas
                 </Button>
               </CardContent>

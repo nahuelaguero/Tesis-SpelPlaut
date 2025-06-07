@@ -12,6 +12,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Calendar,
@@ -21,6 +44,11 @@ import {
   Plus,
   AlertCircle,
   Loader2,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  DollarSign,
 } from "lucide-react";
 
 interface Reserva {
@@ -29,6 +57,7 @@ interface Reserva {
     _id: string;
     nombre: string;
     ubicacion: string;
+    precio_por_hora?: number;
   };
   fecha_reserva: string;
   hora_inicio: string;
@@ -36,13 +65,24 @@ interface Reserva {
   duracion_horas: number;
   precio_total: number;
   estado: "confirmada" | "pendiente" | "cancelada";
+  metodo_pago?: string;
+  pagado: boolean;
   fecha_creacion: string;
+  notas?: string;
 }
 
 export default function MisReservasPage() {
   const { user, loading } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loadingReservas, setLoadingReservas] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingReserva, setEditingReserva] = useState<Reserva | null>(null);
+  const [editForm, setEditForm] = useState({
+    fecha_reserva: "",
+    hora_inicio: "",
+    hora_fin: "",
+    notas: "",
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -79,6 +119,140 @@ export default function MisReservasPage() {
     }
   }, [user, loading, router]);
 
+  const handleCancelReservation = async (reservaId: string) => {
+    setActionLoading(reservaId);
+    try {
+      const response = await fetch(`/api/reservas/${reservaId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Actualizar el estado local
+          setReservas(
+            reservas.map((reserva) =>
+              reserva._id === reservaId
+                ? { ...reserva, estado: "cancelada" as const }
+                : reserva
+            )
+          );
+          alert("Reserva cancelada exitosamente");
+        } else {
+          alert(data.message || "Error al cancelar reserva");
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Error al cancelar reserva");
+      }
+    } catch (error) {
+      console.error("Error al cancelar reserva:", error);
+      alert("Error al procesar la cancelación");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openEditDialog = (reserva: Reserva) => {
+    setEditingReserva(reserva);
+    const fechaISO = new Date(reserva.fecha_reserva)
+      .toISOString()
+      .split("T")[0];
+    setEditForm({
+      fecha_reserva: fechaISO,
+      hora_inicio: reserva.hora_inicio,
+      hora_fin: reserva.hora_fin,
+      notas: reserva.notas || "",
+    });
+  };
+
+  const handleEditReservation = async () => {
+    if (!editingReserva) return;
+
+    // Validaciones básicas
+    if (
+      !editForm.fecha_reserva ||
+      !editForm.hora_inicio ||
+      !editForm.hora_fin
+    ) {
+      alert("Todos los campos de fecha y hora son obligatorios");
+      return;
+    }
+
+    // Validar que la fecha sea futura
+    const today = new Date().toISOString().split("T")[0];
+    if (editForm.fecha_reserva < today) {
+      alert("No se pueden programar reservas para fechas pasadas");
+      return;
+    }
+
+    // Validar horarios
+    const [inicioHour, inicioMin] = editForm.hora_inicio.split(":").map(Number);
+    const [finHour, finMin] = editForm.hora_fin.split(":").map(Number);
+    const inicioMinutos = inicioHour * 60 + inicioMin;
+    const finMinutos = finHour * 60 + finMin;
+
+    if (finMinutos <= inicioMinutos) {
+      alert("La hora de fin debe ser posterior a la hora de inicio");
+      return;
+    }
+
+    if (finMinutos - inicioMinutos < 30) {
+      alert("La reserva debe ser de al menos 30 minutos");
+      return;
+    }
+
+    setActionLoading(editingReserva._id);
+
+    try {
+      // Calcular nueva duración y precio
+      const duracion_horas = (finMinutos - inicioMinutos) / 60;
+      const precio_hora = editingReserva.cancha_id.precio_por_hora || 80000;
+      const nuevo_precio = duracion_horas * precio_hora;
+
+      const response = await fetch(`/api/reservas/${editingReserva._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          fecha_reserva: editForm.fecha_reserva,
+          hora_inicio: editForm.hora_inicio,
+          hora_fin: editForm.hora_fin,
+          duracion_horas,
+          precio_total: nuevo_precio,
+          notas: editForm.notas,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Actualizar el estado local
+          setReservas(
+            reservas.map((reserva) =>
+              reserva._id === editingReserva._id ? data.data.reserva : reserva
+            )
+          );
+          setEditingReserva(null);
+          alert("Reserva modificada exitosamente");
+        } else {
+          alert(data.message || "Error al modificar reserva");
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Error al modificar reserva");
+      }
+    } catch (error) {
+      console.error("Error al modificar reserva:", error);
+      alert("Error al procesar la modificación");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-PY", {
       style: "currency",
@@ -95,6 +269,59 @@ export default function MisReservasPage() {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const getStatusColor = (estado: string, pagado: boolean) => {
+    switch (estado) {
+      case "confirmada":
+        return pagado
+          ? "bg-emerald-100 text-emerald-800"
+          : "bg-blue-100 text-blue-800";
+      case "pendiente":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelada":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusText = (estado: string, pagado: boolean) => {
+    if (estado === "confirmada" && pagado) return "Confirmada y Pagada";
+    if (estado === "confirmada" && !pagado) return "Confirmada";
+    if (estado === "pendiente") return "Pendiente";
+    if (estado === "cancelada") return "Cancelada";
+    return estado;
+  };
+
+  const canCancelReservation = (reserva: Reserva) => {
+    if (reserva.estado === "cancelada") return false;
+    if (reserva.estado === "confirmada" && reserva.pagado) return false;
+
+    // No cancelar si la reserva es en las próximas 2 horas
+    const now = new Date();
+    const reservaDateTime = new Date(
+      `${reserva.fecha_reserva}T${reserva.hora_inicio}`
+    );
+    const timeDiff = reservaDateTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+    return hoursDiff > 2;
+  };
+
+  const canEditReservation = (reserva: Reserva) => {
+    if (reserva.estado === "cancelada") return false;
+    if (reserva.estado === "confirmada" && reserva.pagado) return false;
+
+    // No editar si la reserva es en las próximas 2 horas
+    const now = new Date();
+    const reservaDateTime = new Date(
+      `${reserva.fecha_reserva}T${reserva.hora_inicio}`
+    );
+    const timeDiff = reservaDateTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+    return hoursDiff > 2;
   };
 
   if (loading || loadingReservas) {
@@ -190,21 +417,22 @@ export default function MisReservasPage() {
                           {reserva.cancha_id.ubicacion}
                         </CardDescription>
                       </div>
-                      <Badge
-                        variant={
-                          reserva.estado === "confirmada"
-                            ? "default"
-                            : reserva.estado === "pendiente"
-                            ? "secondary"
-                            : "destructive"
-                        }
-                      >
-                        {reserva.estado === "confirmada"
-                          ? "Confirmada"
-                          : reserva.estado === "pendiente"
-                          ? "Pendiente"
-                          : "Cancelada"}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge
+                          className={getStatusColor(
+                            reserva.estado,
+                            reserva.pagado
+                          )}
+                        >
+                          {getStatusText(reserva.estado, reserva.pagado)}
+                        </Badge>
+                        {reserva.pagado && (
+                          <Badge className="bg-green-100 text-green-800">
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            Pagado
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -243,25 +471,229 @@ export default function MisReservasPage() {
                       </div>
                     </div>
 
+                    {reserva.notas && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="font-semibold text-gray-900 mb-1">
+                          Notas:
+                        </p>
+                        <p className="text-sm text-gray-700">{reserva.notas}</p>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between pt-4 border-t">
                       <div className="text-2xl font-bold text-emerald-600">
                         {formatPrice(reserva.precio_total)}
                       </div>
                       <div className="text-sm text-gray-700 font-medium">
                         Reservado el{" "}
-                        {new Date(reserva.fecha_reserva).toLocaleDateString(
+                        {new Date(reserva.fecha_creacion).toLocaleDateString(
                           "es-ES"
                         )}
                       </div>
                     </div>
 
-                    {reserva.estado === "confirmada" && (
+                    {/* Status Messages */}
+                    {reserva.estado === "confirmada" && reserva.pagado && (
                       <div className="flex items-center space-x-2 bg-emerald-50 rounded-lg p-3">
-                        <AlertCircle className="h-5 w-5 text-emerald-600" />
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
                         <p className="text-sm text-emerald-700">
-                          Tu reserva está confirmada. ¡Te esperamos en la
-                          cancha!
+                          Tu reserva está confirmada y pagada. ¡Te esperamos en
+                          la cancha!
                         </p>
+                      </div>
+                    )}
+
+                    {reserva.estado === "confirmada" && !reserva.pagado && (
+                      <div className="flex items-center space-x-2 bg-blue-50 rounded-lg p-3">
+                        <AlertCircle className="h-5 w-5 text-blue-600" />
+                        <p className="text-sm text-blue-700">
+                          Tu reserva está confirmada. Recuerda completar el pago
+                          antes de tu sesión.
+                        </p>
+                      </div>
+                    )}
+
+                    {reserva.estado === "pendiente" && (
+                      <div className="flex items-center space-x-2 bg-yellow-50 rounded-lg p-3">
+                        <AlertCircle className="h-5 w-5 text-yellow-600" />
+                        <p className="text-sm text-yellow-700">
+                          Tu reserva está pendiente de confirmación.
+                        </p>
+                      </div>
+                    )}
+
+                    {reserva.estado === "cancelada" && (
+                      <div className="flex items-center space-x-2 bg-red-50 rounded-lg p-3">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <p className="text-sm text-red-700">
+                          Esta reserva ha sido cancelada.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    {reserva.estado !== "cancelada" && (
+                      <div className="flex space-x-2 pt-4">
+                        {canEditReservation(reserva) && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                onClick={() => openEditDialog(reserva)}
+                                disabled={actionLoading === reserva._id}
+                                className="flex-1"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Modificar
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>Modificar Reserva</DialogTitle>
+                                <DialogDescription>
+                                  Actualiza los detalles de tu reserva. Los
+                                  cambios están sujetos a disponibilidad.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="fecha" className="text-right">
+                                    Fecha
+                                  </Label>
+                                  <Input
+                                    id="fecha"
+                                    type="date"
+                                    value={editForm.fecha_reserva}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        fecha_reserva: e.target.value,
+                                      })
+                                    }
+                                    className="col-span-3"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label
+                                    htmlFor="inicio"
+                                    className="text-right"
+                                  >
+                                    Inicio
+                                  </Label>
+                                  <Input
+                                    id="inicio"
+                                    type="time"
+                                    value={editForm.hora_inicio}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        hora_inicio: e.target.value,
+                                      })
+                                    }
+                                    className="col-span-3"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="fin" className="text-right">
+                                    Fin
+                                  </Label>
+                                  <Input
+                                    id="fin"
+                                    type="time"
+                                    value={editForm.hora_fin}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        hora_fin: e.target.value,
+                                      })
+                                    }
+                                    className="col-span-3"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="notas" className="text-right">
+                                    Notas
+                                  </Label>
+                                  <Textarea
+                                    id="notas"
+                                    value={editForm.notas}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        notas: e.target.value,
+                                      })
+                                    }
+                                    className="col-span-3"
+                                    placeholder="Notas adicionales (opcional)"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="button"
+                                  onClick={handleEditReservation}
+                                  disabled={
+                                    actionLoading === editingReserva?._id
+                                  }
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                  {actionLoading === editingReserva?._id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : null}
+                                  Guardar Cambios
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+
+                        {canCancelReservation(reserva) && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                disabled={actionLoading === reserva._id}
+                                className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Cancelar
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  ¿Cancelar Reserva?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Se enviará
+                                  un email de confirmación de cancelación.
+                                  {reserva.pagado && (
+                                    <span className="block mt-2 font-medium text-amber-600">
+                                      ⚠️ Esta reserva está pagada. El reembolso
+                                      se procesará según nuestras políticas.
+                                    </span>
+                                  )}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>
+                                  No, mantener
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleCancelReservation(reserva._id)
+                                  }
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  {actionLoading === reserva._id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : null}
+                                  Sí, cancelar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     )}
                   </CardContent>
