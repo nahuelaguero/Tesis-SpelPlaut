@@ -110,7 +110,7 @@ export function verifyRefreshToken(token: string): RefreshTokenData {
     }) as RefreshTokenData;
 
     return payload;
-  } catch (error) {
+  } catch {
     throw new AuthenticationError("Refresh token inválido");
   }
 }
