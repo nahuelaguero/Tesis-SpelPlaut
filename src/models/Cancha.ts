@@ -92,4 +92,4 @@ canchaSchema.index({ tipo_cancha: 1, disponible: 1 });
 canchaSchema.index({ ubicacion: 1 });
 
 export default mongoose.models.Cancha ||
-  mongoose.model<Cancha>("Cancha", canchaSchema);
+  mongoose.model<Cancha>("Cancha", canchaSchema, "canchas");

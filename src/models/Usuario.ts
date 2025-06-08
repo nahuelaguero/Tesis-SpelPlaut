@@ -70,4 +70,4 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
 // El índice único ya está definido en el schema
 
 export default mongoose.models.Usuario ||
-  mongoose.model<Usuario>("Usuario", usuarioSchema);
+  mongoose.model<Usuario>("Usuario", usuarioSchema, "users");
