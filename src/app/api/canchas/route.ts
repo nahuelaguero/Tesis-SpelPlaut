@@ -8,8 +8,8 @@ export async function GET() {
   try {
     await connectDB();
 
-    const canchasFromDB = await Cancha.find({ estado: "disponible" }).sort({
-      fechaCreacion: -1,
+    const canchasFromDB = await Cancha.find({ disponible: true }).sort({
+      createdAt: -1,
     });
 
     // Mapeo de deportes de inglés a español
@@ -28,16 +28,16 @@ export async function GET() {
       return {
         _id: canchaObj._id,
         nombre: canchaObj.nombre,
-        tipo: deporteMap[canchaObj.deporte] || canchaObj.deporte, // Mapear deporte inglés -> español
+        tipo: deporteMap[canchaObj.tipo_cancha] || canchaObj.tipo_cancha, // Usar tipo_cancha correcto
         ubicacion: canchaObj.ubicacion,
-        precio_por_hora: Number(canchaObj.precioHora) || 0, // Asegurar que sea número
-        capacidad_maxima: Number(canchaObj.capacidadJugadores) || 0, // Asegurar que sea número
-        disponible: canchaObj.estado === "disponible", // Mapear estado -> disponible
+        precio_por_hora: Number(canchaObj.precio_por_hora) || 0, // Usar campo correcto
+        capacidad_maxima: Number(canchaObj.capacidad_jugadores) || 0, // Usar campo correcto
+        disponible: canchaObj.disponible, // Usar campo correcto
         descripcion: canchaObj.descripcion,
-        servicios: canchaObj.equipamiento || [], // Mapear equipamiento -> servicios
-        horario_apertura: canchaObj.horarioApertura,
-        horario_cierre: canchaObj.horarioCierre,
-        imagen_url: canchaObj.imagen,
+        servicios: canchaObj.imagenes || [], // Mapear imagenes -> servicios temporalmente
+        horario_apertura: canchaObj.horario_apertura,
+        horario_cierre: canchaObj.horario_cierre,
+        imagen_url: canchaObj.imagenes?.[0] || "/api/placeholder/600/400", // Usar primera imagen
         valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
       };
     });
