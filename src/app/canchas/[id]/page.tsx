@@ -59,7 +59,6 @@ export default function CanchaDetailsPage() {
   const [horaFin, setHoraFin] = useState("");
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
-  const [showPayments, setShowPayments] = useState(false);
 
   useEffect(() => {
     const fetchCancha = async () => {
@@ -124,7 +123,14 @@ export default function CanchaDetailsPage() {
     }
 
     if (!fechaReserva || !horaInicio || !horaFin) {
-      alert("Por favor completa todos los campos obligatorios");
+      alert(
+        "Por favor completa todos los campos obligatorios: fecha, hora de inicio y hora de fin"
+      );
+      return;
+    }
+
+    if (!metodoPago) {
+      alert("Por favor selecciona un método de pago");
       return;
     }
 
@@ -407,38 +413,28 @@ export default function CanchaDetailsPage() {
                 </div>
 
                 {/* Método de pago */}
-                {showPayments ? (
+                <div>
+                  <Label htmlFor="metodo-pago">Método de pago *</Label>
                   <PaymentMethods
                     amount={calculateTotal()}
                     selectedMethod={metodoPago}
                     onPaymentSelect={setMetodoPago}
                   />
-                ) : (
-                  <div>
-                    <Label htmlFor="metodo-pago">Método de pago</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => setShowPayments(true)}
-                    >
-                      {metodoPago === "efectivo"
-                        ? "💵 Efectivo"
-                        : `💳 ${metodoPago}`}
-                    </Button>
-                  </div>
-                )}
+                </div>
 
                 <div>
-                  <Label htmlFor="notas">Notas adicionales</Label>
+                  <Label htmlFor="notas">Comentarios (opcional)</Label>
                   <Textarea
                     id="notas"
-                    placeholder="Información adicional para tu reserva..."
+                    placeholder="Información adicional para tu reserva... (ej: número de jugadores, solicitudes especiales)"
                     value={notas}
                     onChange={(e) => setNotas(e.target.value)}
                     maxLength={500}
-                    className="placeholder:text-gray-500"
+                    rows={3}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {notas.length}/500 caracteres
+                  </p>
                 </div>
 
                 {/* Resumen */}
