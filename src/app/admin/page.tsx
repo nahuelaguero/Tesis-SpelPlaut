@@ -251,7 +251,10 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  onClick={() => router.push("/admin/canchas/nueva")}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
                   Agregar Nueva Cancha
                 </Button>
               </CardContent>
@@ -314,7 +317,10 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                <Button
+                  onClick={() => router.push("/admin/reportes")}
+                  className="w-full bg-orange-600 hover:bg-orange-700"
+                >
                   Ver Reportes
                 </Button>
               </CardContent>
