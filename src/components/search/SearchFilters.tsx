@@ -307,6 +307,12 @@ export function SearchFiltersComponent({
                 value={filters.fecha || ""}
                 onChange={(e) => handleFilterChange("fecha", e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
+                placeholder="dd/mm/aaaa"
+                pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
+                className="cursor-pointer"
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) =>
+                  e.target.showPicker && e.target.showPicker()
+                }
               />
             </div>
 
@@ -320,6 +326,10 @@ export function SearchFiltersComponent({
                 onChange={(e) =>
                   handleFilterChange("disponible_desde", e.target.value)
                 }
+                className="cursor-pointer"
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) =>
+                  e.target.showPicker && e.target.showPicker()
+                }
               />
             </div>
 
@@ -332,6 +342,10 @@ export function SearchFiltersComponent({
                 value={filters.disponible_hasta || ""}
                 onChange={(e) =>
                   handleFilterChange("disponible_hasta", e.target.value)
+                }
+                className="cursor-pointer"
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) =>
+                  e.target.showPicker && e.target.showPicker()
                 }
               />
             </div>

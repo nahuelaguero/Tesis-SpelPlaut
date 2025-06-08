@@ -85,4 +85,54 @@ body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+
+  /* Estilos específicos para inputs date/time en móvil */
+  input[type="date"],
+  input[type="time"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #374151;
+    min-height: 2.5rem;
+    position: relative;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-time-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+    opacity: 1;
+  }
+
+  /* Forzar mostrar picker en móvil */
+  @media (max-width: 768px) {
+    input[type="date"],
+    input[type="time"] {
+      cursor: pointer;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      font-size: 16px; /* Evita zoom en iOS */
+    }
+
+    input[type="date"]:focus,
+    input[type="time"]:focus {
+      outline: 2px solid #10b981;
+      outline-offset: 2px;
+    }
+  }
 }

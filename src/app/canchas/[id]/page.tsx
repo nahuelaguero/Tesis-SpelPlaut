@@ -366,6 +366,12 @@ export default function CanchaDetailsPage() {
                     onChange={(e) => setFechaReserva(e.target.value)}
                     min={new Date().toISOString().split("T")[0]}
                     required
+                    placeholder="dd/mm/aaaa"
+                    pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
+                    className="cursor-pointer"
+                    onFocus={(e) =>
+                      e.target.showPicker && e.target.showPicker()
+                    }
                   />
                 </div>
 
@@ -378,6 +384,10 @@ export default function CanchaDetailsPage() {
                       value={horaInicio}
                       onChange={(e) => setHoraInicio(e.target.value)}
                       required
+                      className="cursor-pointer"
+                      onFocus={(e) =>
+                        e.target.showPicker && e.target.showPicker()
+                      }
                     />
                   </div>
                   <div>
@@ -388,6 +398,10 @@ export default function CanchaDetailsPage() {
                       value={horaFin}
                       onChange={(e) => setHoraFin(e.target.value)}
                       required
+                      className="cursor-pointer"
+                      onFocus={(e) =>
+                        e.target.showPicker && e.target.showPicker()
+                      }
                     />
                   </div>
                 </div>
