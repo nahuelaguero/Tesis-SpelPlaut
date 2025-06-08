@@ -4,6 +4,40 @@ import Cancha from "@/models/Cancha";
 import { requireAdmin, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
+// Función para obtener servicios por tipo de cancha
+function getServiciosPorTipo(tipo: string): string[] {
+  const serviciosMap: Record<string, string[]> = {
+    Football11: [
+      "Arcos reglamentarios",
+      "Vestuarios",
+      "Duchas",
+      "Iluminación LED",
+    ],
+    Football5: ["Arcos", "Vestuarios", "Iluminación", "Césped sintético"],
+    Tennis: ["Red reglamentaria", "Vestuarios", "Iluminación nocturna"],
+    Basketball: [
+      "Aros reglamentarios",
+      "Vestuarios",
+      "Piso de parquet",
+      "Marcador",
+    ],
+    Padel: [
+      "Paredes de cristal",
+      "Vestuarios",
+      "Iluminación LED",
+      "Raquetas disponibles",
+    ],
+    Volleyball: [
+      "Red reglamentaria",
+      "Vestuarios",
+      "Arena importada",
+      "Marcador",
+    ],
+  };
+
+  return serviciosMap[tipo] || ["Vestuarios", "Iluminación"];
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -35,8 +69,8 @@ export async function GET(
       );
     }
 
-    // Mapeo de deportes de inglés a español
-    const deporteMap: Record<string, string> = {
+    // Mapeo de tipos de cancha de inglés a español
+    const tipoMap: Record<string, string> = {
       Football11: "Fútbol 11",
       Football5: "Fútbol 5",
       Tennis: "Tenis",
@@ -52,16 +86,16 @@ export async function GET(
     const cancha = {
       _id: canchaObj._id,
       nombre: canchaObj.nombre,
-      tipo: deporteMap[canchaObj.deporte] || canchaObj.deporte, // Mapear deporte inglés -> español
+      tipo: tipoMap[canchaObj.tipo_cancha] || canchaObj.tipo_cancha, // Mapear tipo_cancha inglés -> español
       ubicacion: canchaObj.ubicacion,
-      precio_por_hora: Number(canchaObj.precioHora) || 0, // Asegurar que sea número
-      capacidad_maxima: Number(canchaObj.capacidadJugadores) || 0, // Asegurar que sea número
-      disponible: canchaObj.estado === "disponible", // Mapear estado -> disponible
+      precio_por_hora: Number(canchaObj.precio_por_hora) || 0, // Asegurar que sea número
+      capacidad_maxima: Number(canchaObj.capacidad_jugadores) || 0, // Asegurar que sea número
+      disponible: canchaObj.disponible, // Campo disponible directo del modelo
       descripcion: canchaObj.descripcion,
-      servicios: canchaObj.equipamiento || [], // Mapear equipamiento -> servicios
-      horario_apertura: canchaObj.horarioApertura,
-      horario_cierre: canchaObj.horarioCierre,
-      imagen_url: canchaObj.imagen,
+      servicios: getServiciosPorTipo(canchaObj.tipo_cancha), // Servicios basados en tipo de cancha
+      horario_apertura: canchaObj.horario_apertura,
+      horario_cierre: canchaObj.horario_cierre,
+      imagen_url: canchaObj.imagenes?.[0] || "/api/placeholder/600/400",
       valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
     };
 
