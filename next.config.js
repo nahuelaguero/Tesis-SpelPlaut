@@ -12,6 +12,18 @@ const nextConfig = {
     domains: ["localhost"],
   },
   serverExternalPackages: ["mongoose"],
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
+    resolveAlias: {
+      "@": "./src",
+    },
+    resolveExtensions: [".mdx", ".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"],
+  },
 };
 
 module.exports = withPWA(nextConfig);

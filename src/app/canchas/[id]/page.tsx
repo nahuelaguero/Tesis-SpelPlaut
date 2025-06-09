@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGeolocation } from "@/lib/geolocation";
 import PaymentMethods from "@/components/PaymentMethods";
 import {
   MapPin,
@@ -48,6 +49,7 @@ export default function CanchaDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { location } = useGeolocation();
   const [cancha, setCancha] = useState<Cancha | null>(null);
   const [loading, setLoading] = useState(true);
   const [reserving, setReserving] = useState(false);
@@ -59,6 +61,50 @@ export default function CanchaDetailsPage() {
   const [horaFin, setHoraFin] = useState("");
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
+
+  // Coordenadas simuladas para Loma Plata (centro aproximado)
+  const baseLatitude = -22.3667;
+  const baseLongitude = -59.85;
+  const canchaCoordinates = {
+    latitude: baseLatitude + (Math.random() - 0.5) * 0.01,
+    longitude: baseLongitude + (Math.random() - 0.5) * 0.01,
+  };
+
+  // Calcular distancia usando la fórmula de Haversine
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number => {
+    const R = 6371; // Radio de la Tierra en kilómetros
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const toRadians = (degrees: number): number => {
+    return degrees * (Math.PI / 180);
+  };
+
+  // Calcular distancia si tenemos ubicación del usuario
+  const distance = location?.coordinates
+    ? calculateDistance(
+        location.coordinates.latitude,
+        location.coordinates.longitude,
+        canchaCoordinates.latitude,
+        canchaCoordinates.longitude
+      )
+    : undefined;
 
   useEffect(() => {
     const fetchCancha = async () => {
@@ -303,6 +349,11 @@ export default function CanchaDetailsPage() {
               <CardDescription className="flex items-center text-gray-700 font-medium">
                 <MapPin className="h-4 w-4 mr-1" />
                 {cancha.ubicacion}
+                {distance && (
+                  <span className="ml-2 text-emerald-600 font-semibold">
+                    ({distance.toFixed(1)} km de distancia)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

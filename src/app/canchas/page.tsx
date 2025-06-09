@@ -1,31 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import Link from "next/link";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+  CanchaCard,
+  CanchaCardSkeleton,
+} from "@/components/canchas/CanchaCard";
+import { useGeolocation } from "@/lib/geolocation";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Search,
-  MapPin,
-  Star,
-  Filter,
-  Calendar,
-  Clock,
-  Users,
-  Zap,
-  Waves,
-  Target,
-} from "lucide-react";
+import { Search, Filter, MapPin } from "lucide-react";
 
 interface Cancha {
   _id: string;
@@ -43,15 +28,6 @@ interface Cancha {
   valoracion?: number;
 }
 
-const tipoIcons: Record<string, React.ElementType> = {
-  "Fútbol 11": Users,
-  "Fútbol 5": Users,
-  Tenis: Target,
-  Básquet: Zap,
-  Pádel: Target,
-  Vóley: Waves,
-};
-
 export default function CanchasPage() {
   const { loading } = useAuth();
   const [canchas, setCanchas] = useState<Cancha[]>([]);
@@ -59,6 +35,7 @@ export default function CanchasPage() {
   const [loadingCanchas, setLoadingCanchas] = useState(true);
   const [selectedTipo, setSelectedTipo] =
     useState<string>("Todos los Deportes");
+  const { location, getCurrentLocation } = useGeolocation();
 
   // Obtener todas las canchas
   useEffect(() => {
@@ -108,14 +85,6 @@ export default function CanchasPage() {
 
     return filtered;
   }, [canchas, searchTerm, selectedTipo]);
-
-  const formatPrice = useCallback((price: number) => {
-    return new Intl.NumberFormat("es-PY", {
-      style: "currency",
-      currency: "PYG",
-      minimumFractionDigits: 0,
-    }).format(price);
-  }, []);
 
   const tiposUnicos = useMemo(() => {
     const tipos = [...new Set(canchas.map((cancha) => cancha.tipo))];
@@ -187,7 +156,34 @@ export default function CanchasPage() {
                 ))}
               </select>
             </div>
+
+            {/* Botón de ubicación */}
+            <Button
+              onClick={getCurrentLocation}
+              variant="outline"
+              className="flex items-center gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+            >
+              <MapPin className="h-4 w-4" />
+              {location ? "Ubicación detectada" : "Mi ubicación"}
+            </Button>
           </div>
+
+          {/* Mostrar ubicación detectada */}
+          {location && (
+            <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="flex items-center gap-2 text-emerald-800">
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Ubicación: {location.city || location.address || "Detectada"}
+                  {location.accuracy && (
+                    <span className="text-emerald-600 ml-2">
+                      (±{Math.round(location.accuracy)}m de precisión)
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -226,102 +222,59 @@ export default function CanchasPage() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCanchas.map((cancha) => {
-                const IconComponent = tipoIcons[cancha.tipo] || Users;
+            <Suspense
+              fallback={
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <CanchaCardSkeleton key={i} />
+                  ))}
+                </div>
+              }
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredCanchas.map((cancha, index) => {
+                  // Convertir el formato de cancha al que espera CanchaCard
+                  // Simular coordenadas para Loma Plata (centro aproximado)
+                  const baseLatitude = -22.3667;
+                  const baseLongitude = -59.85;
+                  const randomOffset = () => (Math.random() - 0.5) * 0.02; // ~1km de radio
 
-                return (
-                  <Card
-                    key={cancha._id}
-                    className="hover:shadow-lg transition-shadow"
-                  >
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center space-x-2">
-                          <IconComponent className="h-5 w-5 text-emerald-600" />
-                          <Badge
-                            variant="secondary"
-                            className="bg-emerald-100 text-emerald-800 font-medium"
-                          >
-                            {cancha.tipo}
-                          </Badge>
-                        </div>
-                        {cancha.valoracion && (
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span className="text-sm font-semibold text-gray-800">
-                              {cancha.valoracion}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <CardTitle className="text-xl font-bold text-gray-900">
-                        {cancha.nombre}
-                      </CardTitle>
-                      <CardDescription className="flex items-center text-gray-700">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {cancha.ubicacion}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-gray-800 font-medium">
-                        {cancha.descripcion}
-                      </p>
+                  const canchaFormatted = {
+                    _id: cancha._id,
+                    descripcion: cancha.nombre, // CanchaCard usa descripcion para el título
+                    tipo_cancha: cancha.tipo,
+                    ubicacion: cancha.ubicacion,
+                    precio_por_hora: cancha.precio_por_hora,
+                    capacidad_jugadores: cancha.capacidad_maxima,
+                    horario_apertura: cancha.horario_apertura,
+                    horario_cierre: cancha.horario_cierre,
+                    disponible: cancha.disponible,
+                    calificacion_promedio: cancha.valoracion,
+                    total_reviews: cancha.valoracion
+                      ? Math.floor(Math.random() * 50) + 5
+                      : undefined,
+                    imagenes: cancha.imagen_url
+                      ? [cancha.imagen_url]
+                      : ["/api/placeholder/600/400"],
+                    // Coordenadas simuladas para Loma Plata
+                    coordenadas: {
+                      latitude: baseLatitude + randomOffset(),
+                      longitude: baseLongitude + randomOffset(),
+                    },
+                  };
 
-                      <div className="flex items-center justify-between text-sm text-gray-700">
-                        <div className="flex items-center space-x-1">
-                          <Users className="h-4 w-4 text-gray-700" />
-                          <span className="font-medium">
-                            Hasta {cancha.capacidad_maxima} jugadores
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="h-4 w-4 text-gray-700" />
-                          <span className="font-medium">
-                            {cancha.horario_apertura} - {cancha.horario_cierre}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="text-2xl font-bold text-emerald-600">
-                          {formatPrice(cancha.precio_por_hora)}
-                          <span className="text-sm font-medium text-gray-700">
-                            /hora
-                          </span>
-                        </div>
-                        <Badge
-                          variant={
-                            cancha.disponible ? "default" : "destructive"
-                          }
-                          className={
-                            cancha.disponible
-                              ? "bg-emerald-100 text-emerald-800 font-semibold"
-                              : "bg-red-100 text-red-800 font-semibold"
-                          }
-                        >
-                          {cancha.disponible ? "Disponible" : "No disponible"}
-                        </Badge>
-                      </div>
-
-                      {cancha.disponible && (
-                        <div className="flex space-x-2">
-                          <Link
-                            href={`/canchas/${cancha._id}`}
-                            className="flex-1"
-                          >
-                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Reservar
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                  return (
+                    <CanchaCard
+                      key={cancha._id}
+                      cancha={canchaFormatted}
+                      priority={index < 3} // Prioridad para las primeras 3 imágenes
+                      userLocation={location?.coordinates}
+                      showDistance={!!location}
+                    />
+                  );
+                })}
+              </div>
+            </Suspense>
           )}
         </div>
       </section>

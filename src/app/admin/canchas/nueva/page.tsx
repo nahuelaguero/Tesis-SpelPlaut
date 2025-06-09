@@ -220,7 +220,7 @@ export default function NuevaCanchaPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Agregar Nueva Cancha
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-700 font-medium">
                 Registra una nueva cancha en el sistema
               </p>
             </div>
@@ -250,8 +250,10 @@ export default function NuevaCanchaPage() {
         {/* Formulario */}
         <Card>
           <CardHeader>
-            <CardTitle>Información de la Cancha</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-gray-900 font-bold">
+              Información de la Cancha
+            </CardTitle>
+            <CardDescription className="text-gray-700 font-medium">
               Completa todos los campos para registrar la nueva cancha
             </CardDescription>
           </CardHeader>
@@ -293,7 +295,7 @@ export default function NuevaCanchaPage() {
                     name="tipo_cancha"
                     value={formData.tipo_cancha}
                     onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 bg-white"
                     required
                   >
                     <option value="">Selecciona un tipo</option>

@@ -11,7 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { MapPin, Filter, X, Search } from "lucide-react";
+
+import {
+  MapPin,
+  Filter,
+  X,
+  Search,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 interface SearchFiltersProps {
   filters: SearchFilters;
@@ -31,8 +39,21 @@ export function SearchFiltersComponent({
   const {
     location,
     loading: geoLoading,
+    error: geoError,
+    permissionState,
+    hasRequestedPermission,
+    isSupported,
     getCurrentLocation,
+    checkPermissions,
+    resetError,
   } = useGeolocation();
+
+  // Verificar permisos al cargar el componente
+  useEffect(() => {
+    if (isSupported) {
+      checkPermissions();
+    }
+  }, [checkPermissions, isSupported]);
 
   useEffect(() => {
     if (location) {
@@ -61,8 +82,9 @@ export function SearchFiltersComponent({
     }
   };
 
-  const handleGetCurrentLocation = () => {
-    getCurrentLocation();
+  const handleGetCurrentLocation = async () => {
+    resetError();
+    await getCurrentLocation();
   };
 
   const handleFilterChange = (
@@ -85,6 +107,83 @@ export function SearchFiltersComponent({
     (key) => filters[key as keyof SearchFilters] !== undefined
   );
 
+  const getLocationButtonText = () => {
+    if (!isSupported) return "GPS no disponible";
+    if (geoLoading) return "Obteniendo ubicación...";
+    if (permissionState === "denied") return "Permisos denegados";
+    if (location) return "Actualizar ubicación";
+    if (hasRequestedPermission && geoError) return "Reintentar";
+    return "Mi ubicación";
+  };
+
+  const getLocationButtonVariant = () => {
+    if (permissionState === "denied") return "destructive";
+    if (location) return "default";
+    return "outline";
+  };
+
+  const renderLocationStatus = () => {
+    if (!isSupported) {
+      return (
+        <div className="text-sm text-amber-600 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>La geolocalización no está disponible en este dispositivo</span>
+        </div>
+      );
+    }
+
+    if (permissionState === "denied") {
+      return (
+        <div className="text-sm text-red-600 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>
+            Permisos de ubicación denegados. Para usar esta función, permite el
+            acceso en la configuración del navegador.
+          </span>
+        </div>
+      );
+    }
+
+    if (geoError && hasRequestedPermission) {
+      return (
+        <div className="text-sm text-red-600 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>{geoError}</span>
+        </div>
+      );
+    }
+
+    if (location) {
+      return (
+        <div className="text-sm text-green-600 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          <span>
+            Ubicación: {location.city || "Ubicación detectada"}
+            {location.accuracy && (
+              <span className="text-gray-400">
+                {" "}
+                (±{Math.round(location.accuracy)}m)
+              </span>
+            )}
+          </span>
+        </div>
+      );
+    }
+
+    if (permissionState === "prompt" || permissionState === "unknown") {
+      return (
+        <div className="text-sm text-blue-600 flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          <span>
+            Haz clic en &quot;Mi ubicación&quot; para obtener tu posición actual
+          </span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <Card className="p-6 bg-white shadow-sm border rounded-lg">
       {/* Búsqueda principal */}
@@ -102,16 +201,26 @@ export function SearchFiltersComponent({
           </div>
           <Button
             type="button"
-            variant="outline"
+            variant={getLocationButtonVariant()}
             onClick={handleGetCurrentLocation}
-            disabled={geoLoading}
-            className="px-3"
+            disabled={
+              geoLoading || !isSupported || permissionState === "denied"
+            }
+            className="px-3 min-w-[120px]"
+            title={
+              !isSupported
+                ? "Geolocalización no soportada"
+                : permissionState === "denied"
+                ? "Permisos de ubicación denegados"
+                : "Obtener mi ubicación actual"
+            }
           >
             {geoLoading ? (
               <LoadingSpinner size="sm" />
             ) : (
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-4 w-4 mr-2" />
             )}
+            {getLocationButtonText()}
           </Button>
           <Button onClick={onSearch} disabled={isLoading} className="px-6">
             {isLoading ? (
@@ -126,21 +235,8 @@ export function SearchFiltersComponent({
           </Button>
         </div>
 
-        {/* Mostrar ubicación actual */}
-        {location && (
-          <div className="text-sm text-gray-600 flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span>
-              Ubicación: {location.city || "Ubicación detectada"}
-              {location.accuracy && (
-                <span className="text-gray-400">
-                  {" "}
-                  (±{Math.round(location.accuracy)}m)
-                </span>
-              )}
-            </span>
-          </div>
-        )}
+        {/* Estado de la ubicación */}
+        {renderLocationStatus()}
 
         {/* Toggle filtros avanzados */}
         <div className="flex items-center justify-between">
@@ -191,6 +287,12 @@ export function SearchFiltersComponent({
                   handleFilterChange("radio", parseInt(e.target.value) || "")
                 }
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!location}
+                title={
+                  !location
+                    ? "Primero obtén tu ubicación para usar este filtro"
+                    : ""
+                }
               >
                 <option value="">Sin límite</option>
                 <option value="1">1 km</option>
@@ -199,6 +301,11 @@ export function SearchFiltersComponent({
                 <option value="25">25 km</option>
                 <option value="50">50 km</option>
               </select>
+              {!location && (
+                <p className="text-xs text-gray-500">
+                  Obtén tu ubicación para usar filtro de distancia
+                </p>
+              )}
             </div>
 
             {/* Tipo de cancha */}
@@ -234,7 +341,9 @@ export function SearchFiltersComponent({
                 className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Relevancia</option>
-                <option value="distancia">Distancia</option>
+                <option value="distancia" disabled={!location}>
+                  Distancia {!location && "(requiere ubicación)"}
+                </option>
                 <option value="precio">Precio</option>
                 <option value="calificacion">Calificación</option>
                 <option value="nombre">Nombre</option>
