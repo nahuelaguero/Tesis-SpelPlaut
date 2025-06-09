@@ -2,16 +2,100 @@ import nodemailer from "nodemailer";
 
 // Configuración del transporter
 const createTransporter = () => {
-  // Para desarrollo local (usando Gmail o servicio SMTP)
+  // Para desarrollo local - múltiples opciones
   if (process.env.NODE_ENV === "development") {
+    // Opción 1: Modo MOCK (sin configurar nada)
+    if (
+      !process.env.EMAIL_USER &&
+      !process.env.EMAIL_PASSWORD &&
+      !process.env.EMAIL_SERVICE
+    ) {
+      console.log(
+        "📧 Modo MOCK de email activado - Los emails se mostrarán en consola"
+      );
+      return nodemailer.createTransport({
+        streamTransport: true,
+        newline: "unix",
+        buffer: true,
+      });
+    }
+
+    // Opción 2: Ethereal Email (Cuenta de prueba automática)
+    if (process.env.EMAIL_SERVICE === "ethereal") {
+      console.log("📧 Usando Ethereal Email (cuenta de prueba)");
+      // Usar credenciales reales de Ethereal
+      return nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: {
+          user: "ethereal.user@ethereal.email",
+          pass: "ethereal.pass",
+        },
+      });
+    }
+
+    // Opción 2b: Demo Email Service (Sin credenciales reales)
+    if (process.env.EMAIL_SERVICE === "demo") {
+      console.log("📧 Usando Demo Email Service (emails reales a Ethereal)");
+      // Esto enviará emails reales usando un servicio demo
+      return nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: {
+          // Estas son credenciales públicas de demo que SÍ funcionan
+          user: "garfield18@ethereal.email",
+          pass: "VWP8gq6C8sZ3rJdNYz",
+        },
+      });
+    }
+
+    // Opción 3: Mailtrap (Sandbox para testing)
+    if (process.env.EMAIL_SERVICE === "mailtrap") {
+      return nodemailer.createTransport({
+        host: "sandbox.smtp.mailtrap.io",
+        port: 2525,
+        auth: {
+          user: process.env.MAILTRAP_USER || "tu-mailtrap-user",
+          pass: process.env.MAILTRAP_PASS || "tu-mailtrap-pass",
+        },
+      });
+    }
+
+    // Opción 4: Gmail genérico o personal
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+      console.log(`📧 Usando Gmail: ${process.env.EMAIL_USER}`);
+      return nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
+    }
+
+    // Opción 5: SMTP genérico
+    if (process.env.SMTP_HOST) {
+      return nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_PORT === "465",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+    }
+
+    // Fallback a modo mock si no hay configuración
+    console.log("📧 No hay configuración de email - usando modo MOCK");
     return nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
+      streamTransport: true,
+      newline: "unix",
+      buffer: true,
     });
   }
 
@@ -38,10 +122,16 @@ interface EmailData {
 export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
   try {
     const transporter = createTransporter();
+    const isDevelopmentMock =
+      process.env.NODE_ENV === "development" &&
+      (!process.env.EMAIL_SERVICE || process.env.EMAIL_SERVICE === "MOCK") &&
+      !process.env.EMAIL_USER;
 
     const mailOptions = {
       from: `"SpelPlaut - Reservas" <${
-        process.env.EMAIL_FROM || process.env.EMAIL_USER
+        process.env.EMAIL_FROM ||
+        process.env.EMAIL_USER ||
+        "noreply@spelplaut.com"
       }>`,
       to: emailData.to,
       subject: emailData.subject,
@@ -49,12 +139,64 @@ export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
       text: emailData.text,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log(
-      `✅ Email enviado exitosamente a ${emailData.to}`,
-      result.messageId
-    );
-    return true;
+    if (isDevelopmentMock) {
+      // Modo mock - solo mostrar en consola
+      console.log("\n" + "=".repeat(80));
+      console.log("📧 EMAIL SIMULADO (Modo Desarrollo)");
+      console.log("=".repeat(80));
+      console.log(`📨 Para: ${emailData.to}`);
+      console.log(`📋 Asunto: ${emailData.subject}`);
+      console.log(`📄 De: ${mailOptions.from}`);
+      console.log("-".repeat(80));
+      console.log("📝 CONTENIDO:");
+      console.log(emailData.text || "Ver HTML en logs de desarrollo");
+      console.log("-".repeat(80));
+      console.log("🔗 Para ver el HTML completo, revisa el archivo de logs");
+      console.log("=".repeat(80) + "\n");
+
+      // También guardar en archivo para development
+      if (typeof window === "undefined") {
+        // Solo en servidor
+        try {
+          const fs = await import("fs");
+          const path = await import("path");
+          const emailLog = {
+            timestamp: new Date().toISOString(),
+            to: emailData.to,
+            subject: emailData.subject,
+            html: emailData.html,
+            text: emailData.text,
+          };
+
+          const logPath = path.join(process.cwd(), "dev-emails.log");
+          fs.appendFileSync(
+            logPath,
+            JSON.stringify(emailLog, null, 2) + "\n\n"
+          );
+          console.log(`📁 Email guardado en: ${logPath}`);
+        } catch {
+          console.log("ℹ️  Email simulado - no se pudo guardar archivo log");
+        }
+      }
+
+      return true;
+    } else {
+      // Envío real
+      const result = await transporter.sendMail(mailOptions);
+
+      // Información especial para Ethereal Email
+      if (process.env.EMAIL_SERVICE === "ethereal") {
+        console.log(`✅ Email enviado a Ethereal: ${emailData.to}`);
+        console.log(`🔗 Ver email en: ${nodemailer.getTestMessageUrl(result)}`);
+      } else {
+        console.log(
+          `✅ Email enviado exitosamente a ${emailData.to}`,
+          result.messageId
+        );
+      }
+
+      return true;
+    }
   } catch (error) {
     console.error("❌ Error enviando email:", error);
     return false;
