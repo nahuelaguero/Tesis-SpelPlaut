@@ -30,6 +30,7 @@ export interface Cancha {
   horario_apertura: string;
   horario_cierre: string;
   disponible: boolean;
+  dias_operativos: string[];
   propietario_id: ObjectId;
   disponibilidad?: {
     fecha: string;

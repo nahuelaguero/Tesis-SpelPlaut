@@ -51,6 +51,8 @@ const ReservaSchema = new Schema<Reserva>(
 ReservaSchema.index({ cancha_id: 1, fecha: 1 });
 ReservaSchema.index({ usuario_id: 1, fecha_reserva: -1 });
 ReservaSchema.index({ estado: 1 });
+// Índice compuesto optimizado para verificar disponibilidad
+ReservaSchema.index({ cancha_id: 1, fecha_reserva: 1, estado: 1 });
 
 const ReservaModel =
   mongoose.models.Reserva || mongoose.model<Reserva>("Reserva", ReservaSchema);

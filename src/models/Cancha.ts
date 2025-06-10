@@ -59,6 +59,27 @@ const canchaSchema = new mongoose.Schema<Cancha>(
       type: Boolean,
       default: true,
     },
+    dias_operativos: {
+      type: [String],
+      enum: [
+        "lunes",
+        "martes",
+        "miercoles",
+        "jueves",
+        "viernes",
+        "sabado",
+        "domingo",
+      ],
+      default: [
+        "lunes",
+        "martes",
+        "miercoles",
+        "jueves",
+        "viernes",
+        "sabado",
+        "domingo",
+      ],
+    },
     propietario_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Usuario",

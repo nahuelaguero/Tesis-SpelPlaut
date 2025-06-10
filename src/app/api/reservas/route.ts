@@ -8,6 +8,12 @@ import { ApiResponse } from "@/types";
 import { sendReservationConfirmation } from "@/lib/email";
 import jwt from "jsonwebtoken";
 
+// Función utilitaria para convertir tiempo en formato HH:MM a minutos
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
@@ -132,6 +138,7 @@ export async function POST(request: NextRequest) {
       precio_total,
       metodo_pago,
       notas,
+      numero_jugadores,
     } = body;
 
     // Validaciones básicas
@@ -224,6 +231,39 @@ export async function POST(request: NextRequest) {
     // Crear la fecha para la base de datos (asegurándose de la zona horaria local)
     const fechaReservaDate = new Date(fecha_reserva + "T00:00:00.000");
 
+    // Validar que la cancha opera ese día de la semana
+    const diasSemana = [
+      "domingo",
+      "lunes",
+      "martes",
+      "miercoles",
+      "jueves",
+      "viernes",
+      "sabado",
+    ];
+    const dayOfWeek = diasSemana[fechaReservaDate.getDay()];
+
+    if (cancha.dias_operativos && !cancha.dias_operativos.includes(dayOfWeek)) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: `La cancha no opera los ${dayOfWeek}s`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validar capacidad de jugadores si se especifica
+    if (numero_jugadores && numero_jugadores > cancha.capacidad_jugadores) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: `Capacidad máxima: ${cancha.capacidad_jugadores} jugadores`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Validar horarios de la cancha - usar horarios_disponibles o valores por defecto
     const [inicioHour, inicioMin] = hora_inicio.split(":").map(Number);
     const [finHour, finMin] = hora_fin.split(":").map(Number);
@@ -254,16 +294,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si la cancha tiene horarios específicos, validar contra ellos
-    // Por ahora usamos un rango general de 6:00 a 23:00
-    const aperturaMinutos = 6 * 60; // 6:00 AM
-    const cierreMinutos = 23 * 60; // 11:00 PM
+    // Validar horarios contra los horarios específicos de la cancha
+    const aperturaMinutos = timeToMinutes(cancha.horario_apertura);
+    const cierreMinutos = timeToMinutes(cancha.horario_cierre);
 
     if (inicioMinutos < aperturaMinutos || finMinutos > cierreMinutos) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Los horarios deben estar entre 06:00 y 23:00",
+          message: `Los horarios deben estar entre ${cancha.horario_apertura} y ${cancha.horario_cierre}`,
         },
         { status: 400 }
       );
