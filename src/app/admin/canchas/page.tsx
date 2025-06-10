@@ -22,6 +22,8 @@ import {
   Clock,
   DollarSign,
   Users,
+  Edit,
+  Eye,
 } from "lucide-react";
 import Image from "next/image";
 import Header from "@/components/layout/Header";
@@ -352,12 +354,22 @@ export default function AdminCanchasPage() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => router.push(`/canchas/${cancha._id}`)}
+                      className="flex-1"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() =>
                         router.push(`/admin/canchas/${cancha._id}`)
                       }
                       className="flex-1"
                     >
-                      Ver Detalles
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
                     </Button>
                     <Button
                       size="sm"

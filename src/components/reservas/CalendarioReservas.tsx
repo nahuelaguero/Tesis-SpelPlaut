@@ -25,6 +25,12 @@ interface ReservaCreada {
 interface CalendarioReservasProps {
   canchaId: string;
   onReservaCreated?: (reserva: ReservaCreada) => void;
+  onSlotSelected?: (slot: {
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    precio: number;
+  }) => void;
 }
 
 interface TimeSlot {
@@ -37,6 +43,11 @@ interface TimeSlot {
 interface DisponibilidadData {
   fecha: string;
   cancha_id: string;
+  duracion_reserva: number;
+  horario_operacion: {
+    apertura: string;
+    cierre: string;
+  };
   horarios_disponibles: string[];
   horarios_ocupados: Array<{
     hora_inicio: string;
@@ -44,16 +55,22 @@ interface DisponibilidadData {
     estado: string;
   }>;
   precio_por_hora: number;
-  informacion_cancha: {
-    nombre: string;
-    horario_apertura: string;
-    horario_cierre: string;
-  };
+  dias_operativos: string[];
+  dia_actual: string;
 }
 
-export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
+export function CalendarioReservas({
+  canchaId,
+  onSlotSelected,
+}: CalendarioReservasProps) {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(() => {
-    return new Date().toISOString().split("T")[0];
+    const hoy = new Date();
+    // Agregar un día para evitar problemas de zona horaria
+    hoy.setDate(hoy.getDate() + 1);
+    const año = hoy.getFullYear();
+    const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+    const dia = String(hoy.getDate()).padStart(2, "0");
+    return `${año}-${mes}-${dia}`;
   });
   const [disponibilidad, setDisponibilidad] =
     useState<DisponibilidadData | null>(null);
@@ -103,9 +120,13 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
     // No permitir fechas pasadas
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
+    fecha.setHours(0, 0, 0, 0);
 
     if (fecha >= hoy) {
-      setFechaSeleccionada(fecha.toISOString().split("T")[0]);
+      const año = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dia = String(fecha.getDate()).padStart(2, "0");
+      setFechaSeleccionada(`${año}-${mes}-${dia}`);
     }
   };
 
@@ -122,8 +143,8 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
     if (!disponibilidad) return [];
 
     const slots: TimeSlot[] = [];
-    const horarioApertura = disponibilidad.informacion_cancha.horario_apertura;
-    const horarioCierre = disponibilidad.informacion_cancha.horario_cierre;
+    const horarioApertura = disponibilidad.horario_operacion.apertura;
+    const horarioCierre = disponibilidad.horario_operacion.cierre;
 
     // Convertir horarios a minutos
     const timeToMinutes = (time: string) => {
@@ -167,7 +188,24 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
   const handleSlotClick = (slot: TimeSlot) => {
     if (slot.disponible) {
       setSelectedSlot(slot.hora_inicio);
-      // Aquí se abriría un modal para crear la reserva
+
+      // Calcular hora de fin (1 hora después)
+      const [hours, minutes] = slot.hora_inicio.split(":").map(Number);
+      const endHours = hours + 1;
+      const hora_fin = `${endHours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`;
+
+      // Notificar al componente padre
+      if (onSlotSelected && disponibilidad) {
+        onSlotSelected({
+          fecha: fechaSeleccionada,
+          hora_inicio: slot.hora_inicio,
+          hora_fin: hora_fin,
+          precio: disponibilidad.precio_por_hora,
+        });
+      }
+
       console.log("Slot seleccionado:", slot);
     }
   };
@@ -211,23 +249,34 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
             variant="outline"
             size="sm"
             onClick={() => cambiarFecha("anterior")}
-            disabled={
-              fechaSeleccionada <= new Date().toISOString().split("T")[0]
-            }
+            disabled={(() => {
+              const hoy = new Date();
+              const año = hoy.getFullYear();
+              const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+              const dia = String(hoy.getDate()).padStart(2, "0");
+              const fechaHoy = `${año}-${mes}-${dia}`;
+              return fechaSeleccionada <= fechaHoy;
+            })()}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
           <div className="text-center">
-            <h3 className="font-semibold text-lg">
+            <h3 className="font-semibold text-lg text-gray-900">
               {formatearFecha(fechaSeleccionada)}
             </h3>
             <input
               type="date"
               value={fechaSeleccionada}
               onChange={(e) => setFechaSeleccionada(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
-              className="mt-1 px-2 py-1 border rounded text-sm"
+              min={(() => {
+                const hoy = new Date();
+                const año = hoy.getFullYear();
+                const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+                const dia = String(hoy.getDate()).padStart(2, "0");
+                return `${año}-${mes}-${dia}`;
+              })()}
+              className="mt-1 px-2 py-1 border rounded text-sm text-gray-700"
             />
           </div>
 
@@ -244,7 +293,9 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
         {loading && (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
-            <span className="ml-2">Cargando disponibilidad...</span>
+            <span className="ml-2 text-gray-700 font-medium">
+              Cargando disponibilidad...
+            </span>
           </div>
         )}
 
@@ -252,7 +303,7 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
         {error && (
           <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-5 w-5 text-red-600" />
-            <span className="text-red-700">{error}</span>
+            <span className="text-red-700 font-medium">{error}</span>
           </div>
         )}
 
@@ -261,7 +312,7 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-gray-900">
-                Horarios para {disponibilidad.informacion_cancha.nombre}
+                Horarios disponibles
               </h4>
               <Badge variant="outline" className="text-emerald-600">
                 {formatPrice(disponibilidad.precio_por_hora)}/hora
@@ -325,15 +376,15 @@ export function CalendarioReservas({ canchaId }: CalendarioReservasProps) {
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-50 border border-green-200 rounded"></div>
-                <span>Disponible</span>
+                <span className="text-gray-700 font-medium">Disponible</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                <span>Ocupado</span>
+                <span className="text-gray-700 font-medium">Ocupado</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded"></div>
-                <span>Seleccionado</span>
+                <span className="text-gray-700 font-medium">Seleccionado</span>
               </div>
             </div>
           </div>

@@ -410,21 +410,55 @@ export default function CanchaDetailsPage() {
                 console.log("Reserva creada:", reserva);
                 setReservationSuccess(true);
               }}
+              onSlotSelected={(slot) => {
+                // Auto-completar formulario cuando se selecciona un slot
+                setFechaReserva(slot.fecha);
+                setHoraInicio(slot.hora_inicio);
+                setHoraFin(slot.hora_fin);
+
+                // Scroll suave hacia el formulario
+                const formulario =
+                  document.getElementById("formulario-reserva");
+                if (formulario) {
+                  formulario.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }
+              }}
             />
           )}
 
-          {/* Formulario de reserva manual (fallback) */}
-          <Card>
+          {/* Formulario de reserva integrado */}
+          <Card id="formulario-reserva">
             <CardHeader>
               <CardTitle className="flex items-center text-gray-900 font-bold">
                 <Calendar className="h-5 w-5 mr-2 text-emerald-600" />
-                Reserva manual
+                Confirmar reserva
               </CardTitle>
               <CardDescription className="text-gray-700 font-medium">
-                O completa los datos manualmente
+                Selecciona un horario arriba o completa los datos manualmente
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Indicador de slot seleccionado */}
+              {fechaReserva && horaInicio && horaFin && (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-emerald-800">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-medium">
+                      Horario seleccionado: {horaInicio} - {horaFin} del{" "}
+                      {new Date(fechaReserva).toLocaleDateString("es-PY", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleReservation} className="space-y-4">
                 <div>
                   <Label htmlFor="fecha">Fecha de reserva *</Label>

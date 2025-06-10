@@ -67,7 +67,7 @@ interface Reserva {
   estado: "confirmada" | "pendiente" | "cancelada";
   metodo_pago?: string;
   pagado: boolean;
-  fecha_creacion: string;
+  createdAt: string; // Usar createdAt en lugar de fecha_creacion
   notas?: string;
 }
 
@@ -486,7 +486,7 @@ export default function MisReservasPage() {
                       </div>
                       <div className="text-sm text-gray-700 font-medium">
                         Reservado el{" "}
-                        {new Date(reserva.fecha_creacion).toLocaleDateString(
+                        {new Date(reserva.createdAt).toLocaleDateString(
                           "es-ES"
                         )}
                       </div>

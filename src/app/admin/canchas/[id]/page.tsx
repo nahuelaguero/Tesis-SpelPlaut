@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,12 @@ import {
 } from "@/components/ui/card";
 import {
   ArrowLeft,
-  MapPin,
   Clock,
   DollarSign,
   Users,
   AlertCircle,
   CheckCircle,
+  Edit,
   Camera,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -35,11 +35,15 @@ interface FormData {
   capacidad_jugadores: string;
   horario_apertura: string;
   horario_cierre: string;
+  disponible: boolean;
 }
 
-export default function NuevaCanchaPage() {
+export default function EditarCanchaPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const canchaId = params.id as string;
+
   const [formData, setFormData] = useState<FormData>({
     nombre: "",
     descripcion: "",
@@ -49,10 +53,13 @@ export default function NuevaCanchaPage() {
     capacidad_jugadores: "",
     horario_apertura: "06:00",
     horario_cierre: "22:00",
+    disponible: true,
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loadingCancha, setLoadingCancha] = useState(true);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
 
   // Verificar permisos
   useEffect(() => {
@@ -60,7 +67,11 @@ export default function NuevaCanchaPage() {
       router.push("/");
       return;
     }
-  }, [user, loading, router]);
+
+    if (user && user.rol === "admin" && canchaId) {
+      loadCancha();
+    }
+  }, [user, loading, router, canchaId]);
 
   const tiposCancha = [
     { value: "Football11", label: "Fútbol 11" },
@@ -71,16 +82,64 @@ export default function NuevaCanchaPage() {
     { value: "Volleyball", label: "Vóley" },
   ];
 
+  const loadCancha = async () => {
+    try {
+      const response = await fetch(`/api/canchas/${canchaId}`, {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const cancha = data.data.cancha;
+
+          // Mapear los datos de la cancha al formulario
+          setFormData({
+            nombre: cancha.nombre || "",
+            descripcion: cancha.descripcion || "",
+            tipo_cancha: cancha.tipo_cancha || "",
+            ubicacion: cancha.ubicacion || "",
+            precio_por_hora: cancha.precio_por_hora?.toString() || "",
+            capacidad_jugadores: cancha.capacidad_jugadores?.toString() || "",
+            horario_apertura: cancha.horario_apertura || "06:00",
+            horario_cierre: cancha.horario_cierre || "22:00",
+            disponible: cancha.disponible ?? true,
+          });
+
+          setCurrentImages(cancha.imagenes || []);
+        } else {
+          setMessage(data.message || "Error al cargar la cancha");
+        }
+      } else {
+        setMessage("Error al obtener información de la cancha");
+      }
+    } catch (error) {
+      console.error("Error al cargar cancha:", error);
+      setMessage("Error de conexión al cargar la cancha");
+    } finally {
+      setLoadingCancha(false);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, type } = e.target;
+
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: checked,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const validateForm = (): string | null => {
@@ -122,15 +181,19 @@ export default function NuevaCanchaPage() {
 
     try {
       const payload = {
-        ...formData,
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        tipo_cancha: formData.tipo_cancha,
+        ubicacion: formData.ubicacion,
         precio_por_hora: parseFloat(formData.precio_por_hora),
         capacidad_jugadores: parseInt(formData.capacidad_jugadores),
-        disponible: true,
-        imagenes: ["/api/placeholder/600/400"], // Imagen por defecto
+        horario_apertura: formData.horario_apertura,
+        horario_cierre: formData.horario_cierre,
+        disponible: formData.disponible,
       };
 
-      const response = await fetch("/api/admin/canchas", {
-        method: "POST",
+      const response = await fetch(`/api/admin/canchas/${canchaId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -142,60 +205,34 @@ export default function NuevaCanchaPage() {
 
       if (response.ok && data.success) {
         setSuccess(true);
-        setMessage("¡Cancha creada exitosamente!");
-
-        // Limpiar formulario
-        setFormData({
-          nombre: "",
-          descripcion: "",
-          tipo_cancha: "",
-          ubicacion: "",
-          precio_por_hora: "",
-          capacidad_jugadores: "",
-          horario_apertura: "06:00",
-          horario_cierre: "22:00",
-        });
+        setMessage("¡Cancha actualizada exitosamente!");
 
         // Redirigir después de 2 segundos
         setTimeout(() => {
           router.push("/admin/canchas");
         }, 2000);
       } else {
-        setMessage(data.message || "Error al crear la cancha");
+        setMessage(data.message || "Error al actualizar la cancha");
       }
     } catch (error) {
-      console.error("Error al crear cancha:", error);
-      setMessage("Error de conexión al crear la cancha");
+      console.error("Error al actualizar cancha:", error);
+      setMessage("Error de conexión al actualizar la cancha");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Verificar permisos
-  if (!user || user.rol !== "admin") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Acceso Denegado
-            </h2>
-            <p className="text-gray-600">
-              Solo los administradores pueden acceder a esta página.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (loadingCancha) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <div className="flex items-center justify-center py-24">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">
+              Cargando información de la cancha...
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -216,13 +253,13 @@ export default function NuevaCanchaPage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver
             </Button>
-            <MapPin className="h-8 w-8 text-emerald-600" />
+            <Edit className="h-8 w-8 text-emerald-600" />
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Agregar Nueva Cancha
+                Editar Cancha
               </h1>
               <p className="text-gray-700 font-medium">
-                Registra una nueva cancha en el sistema
+                Modifica la información de la cancha
               </p>
             </div>
           </div>
@@ -255,7 +292,7 @@ export default function NuevaCanchaPage() {
               Información de la Cancha
             </CardTitle>
             <CardDescription className="text-gray-700 font-medium">
-              Completa todos los campos para registrar la nueva cancha
+              Modifica los campos que desees actualizar
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -342,17 +379,6 @@ export default function NuevaCanchaPage() {
                         </span>
                       </p>
                     </div>
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700">
-                      <p className="font-medium">💡 Ejemplos:</p>
-                      <p>
-                        • &quot;Estadio Municipal, Loma Plata, Boquerón&quot;
-                      </p>
-                      <p>
-                        • &quot;Av. Central 456, Ciudad del Este, Alto
-                        Paraná&quot;
-                      </p>
-                      <p>• &quot;Lat: -25.2637, Lng: -57.5759&quot;</p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -409,11 +435,11 @@ export default function NuevaCanchaPage() {
                     type="time"
                     value={formData.horario_apertura}
                     onChange={handleInputChange}
+                    required
                     className="cursor-pointer"
                     onFocus={(e) =>
                       e.target.showPicker && e.target.showPicker()
                     }
-                    required
                   />
                 </div>
 
@@ -428,20 +454,33 @@ export default function NuevaCanchaPage() {
                     type="time"
                     value={formData.horario_cierre}
                     onChange={handleInputChange}
+                    required
                     className="cursor-pointer"
                     onFocus={(e) =>
                       e.target.showPicker && e.target.showPicker()
                     }
-                    required
                   />
                 </div>
               </div>
 
+              {/* Estado de la cancha */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="disponible"
+                  name="disponible"
+                  checked={formData.disponible}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                />
+                <Label htmlFor="disponible" className="font-medium">
+                  Cancha disponible para reservas
+                </Label>
+              </div>
+
               {/* Sección de imágenes */}
               <div>
-                <Label className="text-base font-medium">
-                  Imágenes de la cancha
-                </Label>
+                <Label className="text-base font-medium">Imágenes</Label>
                 <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6">
                   <div className="text-center">
                     <Camera className="h-8 w-8 text-gray-400 mx-auto mb-4" />
@@ -449,12 +488,27 @@ export default function NuevaCanchaPage() {
                       Sistema de carga de imágenes en desarrollo
                     </p>
                     <p className="text-sm text-gray-500">
-                      Por ahora se asignará una imagen por defecto
+                      Por ahora se usa una imagen por defecto
                     </p>
-                    <div className="mt-4 text-xs text-blue-600">
-                      💡 Próximamente: Arrastra archivos aquí o haz clic para
-                      subir
-                    </div>
+                    {currentImages.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Imágenes actuales:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {currentImages.map((img, index) => (
+                            <div
+                              key={index}
+                              className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center"
+                            >
+                              <span className="text-xs text-gray-500">
+                                Img {index + 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -474,7 +528,7 @@ export default function NuevaCanchaPage() {
                   disabled={submitting}
                   className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700"
                 >
-                  {submitting ? "Creando..." : "Crear Cancha"}
+                  {submitting ? "Actualizando..." : "Actualizar Cancha"}
                 </Button>
               </div>
             </form>

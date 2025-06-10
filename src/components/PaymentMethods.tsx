@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,7 +9,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Smartphone, QrCode, Banknote, Apple } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  CreditCard,
+  Smartphone,
+  QrCode,
+  Banknote,
+  Apple,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface PaymentMethodsProps {
   amount: number;
@@ -21,6 +31,8 @@ const PaymentMethods = ({
   onPaymentSelect,
   selectedMethod,
 }: PaymentMethodsProps) => {
+  const [showDigitalPayments, setShowDigitalPayments] = useState(false);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-PY", {
       style: "currency",
@@ -94,53 +106,78 @@ const PaymentMethods = ({
       {/* Métodos digitales */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Pagos Digitales
-          </CardTitle>
-          <CardDescription>
-            Procesados por Bancard - Confirmación inmediata
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {digitalMethods.map((option) => (
-              <div
-                key={option.id}
-                className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors"
-              >
-                <input
-                  type="radio"
-                  id={option.id}
-                  name="payment-method"
-                  value={option.id}
-                  checked={selectedMethod === option.id}
-                  onChange={() => onPaymentSelect(option.id)}
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
-                />
-                <div className="flex items-center space-x-3 flex-1">
-                  <div className="text-emerald-600">{option.icon}</div>
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={option.id}
-                      className="font-medium text-gray-900 cursor-pointer"
-                    >
-                      {option.title}
-                    </Label>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {option.description}
-                    </p>
-                  </div>
-                  {option.instant && (
-                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                      Instantáneo
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Pagos Digitales
+              </CardTitle>
+              <CardDescription>
+                Procesados por Bancard - Confirmación inmediata
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDigitalPayments(!showDigitalPayments)}
+              className="flex items-center gap-2"
+            >
+              {showDigitalPayments ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Ocultar
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Ver opciones
+                </>
+              )}
+            </Button>
           </div>
-        </CardContent>
+        </CardHeader>
+        {showDigitalPayments && (
+          <CardContent>
+            <div className="space-y-3">
+              {digitalMethods.map((option) => (
+                <div
+                  key={option.id}
+                  className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    id={option.id}
+                    name="payment-method"
+                    value={option.id}
+                    checked={selectedMethod === option.id}
+                    onChange={() => onPaymentSelect(option.id)}
+                    className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                  />
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="text-emerald-600">{option.icon}</div>
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={option.id}
+                        className="font-medium text-gray-900 cursor-pointer"
+                      >
+                        {option.title}
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {option.description}
+                      </p>
+                    </div>
+                    {option.instant && (
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
+                        Instantáneo
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Método de efectivo */}

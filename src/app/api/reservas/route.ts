@@ -170,7 +170,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (cancha.estado !== "activo") {
+    // Verificar estado de la cancha (usar disponible si estado no está definido)
+    if (cancha.estado && cancha.estado !== "activo") {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "La cancha no está disponible",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Verificar disponibilidad general de la cancha
+    if (cancha.disponible === false) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -231,26 +243,28 @@ export async function POST(request: NextRequest) {
     // Crear la fecha para la base de datos (asegurándose de la zona horaria local)
     const fechaReservaDate = new Date(fecha_reserva + "T00:00:00.000");
 
-    // Validar que la cancha opera ese día de la semana
-    const diasSemana = [
-      "domingo",
-      "lunes",
-      "martes",
-      "miercoles",
-      "jueves",
-      "viernes",
-      "sabado",
-    ];
-    const dayOfWeek = diasSemana[fechaReservaDate.getDay()];
+    // Validar que la cancha opera ese día de la semana (solo si está definido)
+    if (cancha.dias_operativos && cancha.dias_operativos.length > 0) {
+      const diasSemana = [
+        "domingo",
+        "lunes",
+        "martes",
+        "miercoles",
+        "jueves",
+        "viernes",
+        "sabado",
+      ];
+      const dayOfWeek = diasSemana[fechaReservaDate.getDay()];
 
-    if (cancha.dias_operativos && !cancha.dias_operativos.includes(dayOfWeek)) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: `La cancha no opera los ${dayOfWeek}s`,
-        },
-        { status: 400 }
-      );
+      if (!cancha.dias_operativos.includes(dayOfWeek)) {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            message: `La cancha no opera los ${dayOfWeek}s`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Validar capacidad de jugadores si se especifica
@@ -311,7 +325,7 @@ export async function POST(request: NextRequest) {
     // Verificar que no hay reservas superpuestas (excluir canceladas)
     const reservasSuperpuestas = await Reserva.find({
       cancha_id,
-      fecha_reserva: fechaReservaDate,
+      fecha: fecha_reserva, // Usar fecha string en lugar de Date
       estado: { $ne: "cancelada" },
       $or: [
         {
@@ -374,7 +388,8 @@ export async function POST(request: NextRequest) {
     const nuevaReserva = new Reserva({
       cancha_id,
       usuario_id: decoded.userId,
-      fecha_reserva: fechaReservaDate,
+      fecha: fecha_reserva, // String YYYY-MM-DD (requerido por el modelo)
+      fecha_reserva: fechaReservaDate, // Date object para queries
       hora_inicio,
       hora_fin,
       duracion_horas,
