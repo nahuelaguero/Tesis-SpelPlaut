@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/lib/geolocation";
 import PaymentMethods from "@/components/PaymentMethods";
+import { CalendarioReservas } from "@/components/reservas/CalendarioReservas";
 import {
   MapPin,
   Star,
@@ -401,15 +402,26 @@ export default function CanchaDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Formulario de reserva */}
+          {/* Calendario de reservas */}
+          {cancha && (
+            <CalendarioReservas
+              canchaId={cancha._id}
+              onReservaCreated={(reserva) => {
+                console.log("Reserva creada:", reserva);
+                setReservationSuccess(true);
+              }}
+            />
+          )}
+
+          {/* Formulario de reserva manual (fallback) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center text-gray-900 font-bold">
                 <Calendar className="h-5 w-5 mr-2 text-emerald-600" />
-                Reservar cancha
+                Reserva manual
               </CardTitle>
               <CardDescription className="text-gray-700 font-medium">
-                Completa los datos para reservar esta cancha
+                O completa los datos manualmente
               </CardDescription>
             </CardHeader>
             <CardContent>
