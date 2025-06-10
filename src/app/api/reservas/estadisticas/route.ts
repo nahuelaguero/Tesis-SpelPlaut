@@ -50,12 +50,14 @@ interface EstadisticasReservas {
     estado: string;
     precio_total: number;
   }>;
-  tendencias: {
-    crecimiento_mensual: number;
-    dia_mas_popular: string;
-    hora_mas_popular: string;
-    cancha_mas_reservada: string;
-  };
+  tendencias:
+    | {
+        crecimiento_mensual: number;
+        dia_mas_popular: string;
+        hora_mas_popular: string;
+        cancha_mas_reservada: string;
+      }
+    | Record<string, never>;
 }
 
 // GET /api/reservas/estadisticas?periodo=30&cancha_id=xxx
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
     const inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 
     // Construir filtro base
-    const filtroBase: any = {
+    const filtroBase: Record<string, unknown> = {
       fecha_reserva: { $gte: fechaInicio },
     };
 
@@ -207,7 +209,11 @@ export async function GET(request: NextRequest) {
     // 3. RESERVAS POR CANCHA
     const reservasPorCancha = new Map();
     reservasDelPeriodo.forEach((reserva) => {
-      const cancha = reserva.cancha_id as any;
+      const cancha = reserva.cancha_id as {
+        _id: { toString(): string };
+        nombre: string;
+        tipo_cancha: string;
+      };
       const key = cancha._id.toString();
 
       if (!reservasPorCancha.has(key)) {
@@ -285,12 +291,18 @@ export async function GET(request: NextRequest) {
       hora_inicio: reserva.hora_inicio,
       hora_fin: reserva.hora_fin,
       cancha: {
-        nombre: (reserva.cancha_id as any).nombre,
-        tipo: (reserva.cancha_id as any).tipo_cancha,
+        nombre: (reserva.cancha_id as { nombre: string; tipo_cancha: string })
+          .nombre,
+        tipo: (reserva.cancha_id as { nombre: string; tipo_cancha: string })
+          .tipo_cancha,
       },
       usuario: {
-        nombre_completo: (reserva.usuario_id as any).nombre_completo,
-        email: (reserva.usuario_id as any).email,
+        nombre_completo: (
+          reserva.usuario_id as { nombre_completo: string; email: string }
+        ).nombre_completo,
+        email: (
+          reserva.usuario_id as { nombre_completo: string; email: string }
+        ).email,
       },
       estado: reserva.estado,
       precio_total: reserva.precio_total,

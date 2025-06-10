@@ -4,7 +4,6 @@ import Reserva from "@/models/Reserva";
 import Cancha from "@/models/Cancha";
 import { isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
-import { validateForm, validationSchemas } from "@/lib/validation";
 
 interface ValidacionReserva {
   cancha_id: string;
@@ -71,15 +70,32 @@ export async function POST(request: NextRequest) {
 
     // 1. VALIDACIONES BÁSICAS DE FORMATO
 
-    // Validar campos requeridos
-    const validacionCampos = validateForm(
-      { fecha, hora_inicio, hora_fin },
-      validationSchemas.reserva
-    );
+    // Validar campos requeridos manualmente para evitar problemas de tipo readonly
+    const erroresCampos: string[] = [];
 
-    if (!validacionCampos.isValid) {
+    if (!fecha || !fecha.trim()) {
+      erroresCampos.push("La fecha es requerida");
+    } else {
+      const fechaDate = new Date(fecha);
+      if (isNaN(fechaDate.getTime()) || fechaDate <= new Date()) {
+        erroresCampos.push("La fecha debe ser futura");
+      }
+    }
+
+    if (!hora_inicio || !hora_fin) {
+      erroresCampos.push("Las horas son requeridas");
+    } else {
+      if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(hora_inicio)) {
+        erroresCampos.push("Formato de hora de inicio inválido (HH:MM)");
+      }
+      if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(hora_fin)) {
+        erroresCampos.push("Formato de hora de fin inválido (HH:MM)");
+      }
+    }
+
+    if (erroresCampos.length > 0) {
       resultado.valida = false;
-      resultado.errores.push(...Object.values(validacionCampos.errors));
+      resultado.errores.push(...erroresCampos);
     }
 
     // Validar ID de cancha
