@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -61,18 +61,6 @@ export default function EditarCanchaPage() {
   const [loadingCancha, setLoadingCancha] = useState(true);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
 
-  // Verificar permisos
-  useEffect(() => {
-    if (!loading && (!user || user.rol !== "admin")) {
-      router.push("/");
-      return;
-    }
-
-    if (user && user.rol === "admin" && canchaId) {
-      loadCancha();
-    }
-  }, [user, loading, router, canchaId]);
-
   const tiposCancha = [
     { value: "Football11", label: "Fútbol 11" },
     { value: "Football5", label: "Fútbol 5" },
@@ -82,7 +70,7 @@ export default function EditarCanchaPage() {
     { value: "Volleyball", label: "Vóley" },
   ];
 
-  const loadCancha = async () => {
+  const loadCancha = useCallback(async () => {
     try {
       const response = await fetch(`/api/canchas/${canchaId}`, {
         credentials: "include",
@@ -119,7 +107,23 @@ export default function EditarCanchaPage() {
     } finally {
       setLoadingCancha(false);
     }
-  };
+  }, [canchaId]);
+
+  useEffect(() => {
+    if (!user && !loading) {
+      router.push("/login");
+      return;
+    }
+
+    if (user && user.rol !== "admin") {
+      router.push("/dashboard");
+      return;
+    }
+
+    if (user && user.rol === "admin" && canchaId) {
+      loadCancha();
+    }
+  }, [user, loading, router, canchaId, loadCancha]);
 
   const handleInputChange = (
     e: React.ChangeEvent<

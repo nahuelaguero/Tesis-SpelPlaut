@@ -8,6 +8,8 @@ export interface Usuario {
   rol: "usuario" | "propietario_cancha" | "admin";
   contrasena_hash: string;
   autenticacion_2FA: boolean;
+  codigo_2fa_email?: string;
+  codigo_2fa_expira?: Date;
   preferencias: {
     tema?: "claro" | "oscuro";
     notificaciones?: boolean;
@@ -87,4 +89,5 @@ export interface ApiResponse<T = unknown> {
   message: string;
   data?: T;
   error?: string;
+  twoFARequired?: boolean;
 }

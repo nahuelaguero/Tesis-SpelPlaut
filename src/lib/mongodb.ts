@@ -16,7 +16,6 @@ interface MongooseConnection {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var mongoose: MongooseConnection | undefined;
 }
 

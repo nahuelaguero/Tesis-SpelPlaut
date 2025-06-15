@@ -33,6 +33,14 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
       type: Boolean,
       default: false,
     },
+    codigo_2fa_email: {
+      type: String,
+      default: null,
+    },
+    codigo_2fa_expira: {
+      type: Date,
+      default: null,
+    },
     preferencias: {
       tema: {
         type: String,

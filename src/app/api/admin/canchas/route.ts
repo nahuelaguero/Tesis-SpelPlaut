@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Cancha from "@/models/Cancha";
-import { requireAdmin } from "@/lib/auth";
+import { require2FAIfEnabled } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    // Verificar que sea administrador
-    const admin = requireAdmin(request);
-    if (!admin) {
+    // Verificar que sea administrador y 2FA si corresponde
+    const admin = await require2FAIfEnabled(request);
+    if (!admin || admin.rol !== "admin") {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Acceso denegado. Solo administradores pueden crear canchas",
+          message:
+            admin && admin.autenticacion_2FA
+              ? "Código 2FA inválido o faltante."
+              : "Acceso denegado. Solo administradores pueden crear canchas",
         },
         { status: 403 }
       );
@@ -145,7 +148,7 @@ export async function POST(request: NextRequest) {
       horario_cierre,
       imagenes: imagenes || ["/api/placeholder/600/400"],
       disponible,
-      propietario_id: admin.userId,
+      propietario_id: admin._id,
     });
 
     const canchaGuardada = await nuevaCancha.save();

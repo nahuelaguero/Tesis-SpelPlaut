@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
-import { requireAuth, isValidObjectId } from "@/lib/auth";
+import { require2FAIfEnabled, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    // Verificar autenticación
-    const user = requireAuth(request);
+    // Verificar autenticación y 2FA si corresponde
+    const user = await require2FAIfEnabled(request);
     if (!user) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Acceso denegado. Debes iniciar sesión",
+          message: "No autenticado o código 2FA inválido.",
         },
         { status: 401 }
       );
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar que el usuario puede pagar esta reserva
-    const isOwner = reserva.usuario_id.toString() === user.userId;
+    const isOwner = reserva.usuario_id.toString() === user._id?.toString();
     const isAdmin = user.rol === "admin";
 
     if (!isOwner && !isAdmin) {
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
           monto,
           fecha_pago: new Date(),
           referencia: referenciaGenerada,
-          procesado_por: user.userId,
+          procesado_por: user._id,
         },
       },
       { new: true }
@@ -247,12 +247,12 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     // Verificar autenticación
-    const user = requireAuth(request);
+    const user = await require2FAIfEnabled(request);
     if (!user) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Acceso denegado. Debes iniciar sesión",
+          message: "No autenticado o código 2FA inválido.",
         },
         { status: 401 }
       );
@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
 
     // Si no es admin, solo puede ver sus propios pagos
     if (user.rol !== "admin") {
-      filters.usuario_id = user.userId;
+      filters.usuario_id = user._id;
     } else if (usuario_id) {
       if (!isValidObjectId(usuario_id)) {
         return NextResponse.json<ApiResponse>(

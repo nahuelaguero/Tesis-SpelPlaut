@@ -52,3 +52,8 @@ export function isTimeOverlapping(
   // Verificar solapamiento
   return start1Minutes < end2Minutes && start2Minutes < end1Minutes;
 }
+
+export function generate2FACode(): string {
+  // Genera un código numérico de 6 dígitos
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}

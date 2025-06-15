@@ -1,119 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Usuario from "@/models/Usuario";
-import jwt from "jsonwebtoken";
+import { require2FAIfEnabled } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
-export async function PUT(request: NextRequest) {
-  try {
-    await connectDB();
-
-    // Verificar autenticación
-    const token = request.cookies.get("auth-token")?.value;
-    if (!token) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "No autorizado - Sin token",
-        },
-        { status: 401 }
-      );
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-        userId: string;
-        email: string;
-        rol: string;
-      };
-    } catch {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Token inválido o expirado",
-        },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-    const { nombre_completo, telefono } = body;
-
-    // Validaciones básicas
-    if (!nombre_completo || nombre_completo.trim() === "") {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "El nombre completo es requerido",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (nombre_completo.length < 2) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "El nombre debe tener al menos 2 caracteres",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validar teléfono si se proporciona
-    if (telefono && telefono.trim() !== "") {
-      const telefonoRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
-      if (!telefonoRegex.test(telefono.trim())) {
-        return NextResponse.json<ApiResponse>(
-          {
-            success: false,
-            message: "Formato de teléfono inválido",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Buscar y actualizar usuario
-    const updatedUser = await Usuario.findByIdAndUpdate(
-      decoded.userId,
-      {
-        nombre_completo: nombre_completo.trim(),
-        telefono: telefono ? telefono.trim() : "",
-        fecha_actualizacion: new Date(),
-      },
-      {
-        new: true,
-        select: "-password", // Excluir la contraseña de la respuesta
-      }
-    );
-
-    if (!updatedUser) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Usuario no encontrado",
-        },
-        { status: 404 }
-      );
-    }
-
-    console.log(`✅ Perfil actualizado para usuario: ${updatedUser.email}`);
-
-    return NextResponse.json<ApiResponse>({
-      success: true,
-      message: "Perfil actualizado exitosamente",
-      data: { user: updatedUser },
-    });
-  } catch (error) {
-    console.error("Error al actualizar perfil:", error);
+export async function GET(request: NextRequest) {
+  await connectDB();
+  const user = await require2FAIfEnabled(request);
+  if (!user) {
     return NextResponse.json<ApiResponse>(
       {
         success: false,
-        message: "Error interno del servidor",
+        message: "No autenticado o código 2FA inválido.",
       },
-      { status: 500 }
+      { status: 401 }
     );
   }
+  // No exponer hash ni códigos 2FA
+  const userObj =
+    typeof (user as unknown as { toJSON?: () => unknown }).toJSON === "function"
+      ? (user as unknown as { toJSON: () => unknown }).toJSON()
+      : { ...user };
+  const safeUser = userObj as Record<string, unknown>;
+  delete safeUser.contrasena_hash;
+  delete safeUser.codigo_2fa_email;
+  delete safeUser.codigo_2fa_expira;
+  return NextResponse.json<ApiResponse>({
+    success: true,
+    message: "Perfil de usuario",
+    data: safeUser,
+  });
+}
+
+export async function PATCH(request: NextRequest) {
+  await connectDB();
+  const user = await require2FAIfEnabled(request);
+  if (!user) {
+    return NextResponse.json<ApiResponse>(
+      {
+        success: false,
+        message: "No autenticado o código 2FA inválido.",
+      },
+      { status: 401 }
+    );
+  }
+  const { activar_2fa } = await request.json();
+  if (typeof activar_2fa !== "boolean") {
+    return NextResponse.json<ApiResponse>(
+      {
+        success: false,
+        message: "El campo 'activar_2fa' es requerido y debe ser booleano.",
+      },
+      { status: 400 }
+    );
+  }
+  user.autenticacion_2FA = activar_2fa;
+  if (!activar_2fa) {
+    user.codigo_2fa_email = undefined;
+    user.codigo_2fa_expira = undefined;
+  }
+  await (user as unknown as { save?: () => Promise<void> }).save?.();
+  return NextResponse.json<ApiResponse>({
+    success: true,
+    message: activar_2fa
+      ? "Verificación en dos pasos (2FA) activada."
+      : "Verificación en dos pasos (2FA) desactivada.",
+    data: { autenticacion_2FA: user.autenticacion_2FA },
+  });
 }

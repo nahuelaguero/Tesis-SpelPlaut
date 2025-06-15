@@ -22,7 +22,9 @@ import {
   EyeOff,
   CheckCircle,
   AlertCircle,
+  Shield,
 } from "lucide-react";
+import TwoFactorSettings from "@/components/ui/TwoFactorSettings";
 
 interface UserProfile {
   _id: string;
@@ -31,6 +33,7 @@ interface UserProfile {
   telefono: string;
   fecha_registro: string;
   rol: string;
+  autenticacion_2FA: boolean;
 }
 
 export default function PerfilPage() {
@@ -40,7 +43,9 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile");
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "password" | "security"
+  >("profile");
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -84,6 +89,11 @@ export default function PerfilPage() {
             setProfileForm({
               nombre_completo: data.data.user.nombre_completo || "",
               telefono: data.data.user.telefono || "",
+            });
+            setProfile(data.data);
+            setProfileForm({
+              nombre_completo: data.data.nombre_completo || "",
+              telefono: data.data.telefono || "",
             });
           }
         }
@@ -275,25 +285,36 @@ export default function PerfilPage() {
         <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab("profile")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === "profile"
                 ? "bg-white text-emerald-600 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            <User className="h-4 w-4" />
-            Información Personal
+            <User className="h-4 w-4 mr-2" />
+            Perfil
           </button>
           <button
             onClick={() => setActiveTab("password")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === "password"
                 ? "bg-white text-emerald-600 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            <Key className="h-4 w-4" />
-            Cambiar Contraseña
+            <Key className="h-4 w-4 mr-2" />
+            Contraseña
+          </button>
+          <button
+            onClick={() => setActiveTab("security")}
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "security"
+                ? "bg-white text-emerald-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            Seguridad
           </button>
         </div>
 
@@ -591,6 +612,17 @@ export default function PerfilPage() {
               </form>
             </CardContent>
           </Card>
+        )}
+
+        {activeTab === "security" && profile && (
+          <TwoFactorSettings
+            initialEnabled={profile.autenticacion_2FA}
+            onStatusChange={(enabled) => {
+              setProfile((prev) =>
+                prev ? { ...prev, autenticacion_2FA: enabled } : null
+              );
+            }}
+          />
         )}
       </div>
     </div>

@@ -633,3 +633,25 @@ export const sendPasswordResetEmail = async (
     text: `Restablecer Contraseña\n\nHola ${userName},\n\nRecibimos una solicitud para restablecer tu contraseña.\n\nEnlace: ${resetData.resetUrl}\n\nEste enlace expira en ${resetData.expiresIn}.\n\nSi no solicitaste este cambio, ignora este email.\n\nSpelPlaut`,
   });
 };
+
+export const send2FAEmail = async (
+  userEmail: string,
+  userName: string,
+  code: string
+) => {
+  const content = `
+    <h2>Verificación en dos pasos (2FA) 🔐</h2>
+    <p>Hola <strong>${userName}</strong>,</p>
+    <p>Tu código de verificación es:</p>
+    <div style="font-size: 2rem; font-weight: bold; color: #059669; margin: 20px 0;">${code}</div>
+    <p>Este código es válido por 10 minutos. Si no solicitaste este código, ignora este mensaje.</p>
+    <p>¿Necesitas ayuda? Contáctanos respondiendo a este email.</p>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject: "Tu código de verificación 2FA - SpelPlaut",
+    html: getBaseTemplate(content, "Verificación 2FA"),
+    text: `Verificación en dos pasos (2FA)\n\nHola ${userName},\n\nTu código de verificación es: ${code}\n\nEste código es válido por 10 minutos. Si no solicitaste este código, ignora este mensaje.\n\nSpelPlaut`,
+  });
+};

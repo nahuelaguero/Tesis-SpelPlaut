@@ -215,7 +215,6 @@ Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 ## 👥 Autores
 
 - **Nahuel Aguero** - _Desarrollo inicial_
-- **Cursor Agent** - _Asistencia de desarrollo y documentación_
 
 ## 🙏 Agradecimientos
 

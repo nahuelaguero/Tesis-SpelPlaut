@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { AuthenticationError, AuthorizationError } from "./error-handler";
 import type { StringValue } from "ms";
+import type { Usuario } from "@/types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
 const JWT_REFRESH_SECRET =
@@ -317,4 +318,46 @@ export function isValidObjectId(id: string): boolean {
   } catch {
     return false;
   }
+}
+
+export async function validate2FACode(
+  user: Usuario,
+  code: string
+): Promise<boolean> {
+  if (!user.autenticacion_2FA) return false;
+  if (!user.codigo_2fa_email || !user.codigo_2fa_expira) return false;
+  if (user.codigo_2fa_email !== code) return false;
+  if (user.codigo_2fa_expira.getTime() < Date.now()) return false;
+  // Limpiar el código tras validación exitosa
+  user.codigo_2fa_email = undefined;
+  user.codigo_2fa_expira = undefined;
+  await (user as unknown as { save?: () => Promise<void> }).save?.();
+  return true;
+}
+
+export async function require2FAIfEnabled(
+  request: NextRequest
+): Promise<Usuario | null> {
+  const userPayload = getUserFromRequest(request);
+  if (!userPayload) return null;
+  const UsuarioModel = (await import("@/models/Usuario")).default;
+  const user = await UsuarioModel.findById(userPayload.userId);
+  if (!user) return null;
+  if (!user.autenticacion_2FA) return user;
+
+  // Obtener código 2FA del body o header
+  let code: string | undefined;
+  if (request.headers.get("x-2fa-code")) {
+    code = request.headers.get("x-2fa-code") || undefined;
+  } else {
+    try {
+      const body = await request.json();
+      code = body["codigo_2fa"];
+    } catch {
+      // No body o no JSON
+    }
+  }
+  if (!code) return null;
+  const valid = await validate2FACode(user, code);
+  return valid ? user : null;
 }

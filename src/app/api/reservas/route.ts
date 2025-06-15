@@ -3,10 +3,9 @@ import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
 import Cancha from "@/models/Cancha";
 import Usuario from "@/models/Usuario";
-import { requireAuth, isValidObjectId } from "@/lib/auth";
+import { require2FAIfEnabled, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 import { sendReservationConfirmation } from "@/lib/email";
-import jwt from "jsonwebtoken";
 
 // Función utilitaria para convertir tiempo en formato HH:MM a minutos
 function timeToMinutes(time: string): number {
@@ -18,13 +17,13 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    // Verificar autenticación
-    const user = requireAuth(request);
+    // Verificar autenticación y 2FA si corresponde
+    const user = await require2FAIfEnabled(request);
     if (!user) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Acceso denegado. Debes iniciar sesión",
+          message: "No autenticado o código 2FA inválido.",
         },
         { status: 401 }
       );
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Si es admin, puede ver todas las reservas, si no solo las suyas
     if (user.rol !== "admin") {
-      filters.usuario_id = user.userId;
+      filters.usuario_id = user._id;
     }
 
     if (cancha_id) {
@@ -98,36 +97,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticación
-    const token = request.cookies.get("auth-token")?.value;
-
-    if (!token) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "No autorizado - Sin token",
-        },
-        { status: 401 }
-      );
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || "fallback-secret"
-      ) as { userId: string; email: string; rol: string };
-    } catch {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Token inválido o expirado",
-        },
-        { status: 401 }
-      );
-    }
-
     await connectDB();
+    // Verificar autenticación y 2FA si corresponde
+    const user = await require2FAIfEnabled(request);
+    if (!user) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "No autenticado o código 2FA inválido.",
+        },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
     const {
@@ -362,9 +343,7 @@ export async function POST(request: NextRequest) {
     // Calcular duración en horas
     const duracion_horas = (finMinutos - inicioMinutos) / 60;
 
-    console.log(
-      `🔒 Creando reserva para usuario: ${decoded.userId} (${decoded.email})`
-    );
+    console.log(`🔒 Creando reserva para usuario: ${user._id} (${user.email})`);
 
     // Validar método de pago
     const metodosValidos = [
@@ -387,7 +366,7 @@ export async function POST(request: NextRequest) {
     // Crear la reserva
     const nuevaReserva = new Reserva({
       cancha_id,
-      usuario_id: decoded.userId,
+      usuario_id: user._id,
       fecha: fecha_reserva, // String YYYY-MM-DD (requerido por el modelo)
       fecha_reserva: fechaReservaDate, // Date object para queries
       hora_inicio,
@@ -410,7 +389,7 @@ export async function POST(request: NextRequest) {
 
     // Enviar email de confirmación (de forma asíncrona)
     try {
-      const usuario = await Usuario.findById(decoded.userId);
+      const usuario = await Usuario.findById(user._id);
       if (usuario && usuario.email) {
         const emailSent = await sendReservationConfirmation(
           usuario.email,

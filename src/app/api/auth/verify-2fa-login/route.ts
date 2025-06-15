@@ -1,69 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import connectDB from "@/lib/mongodb";
 import Usuario from "@/models/Usuario";
-import { LoginCredentials, ApiResponse } from "@/types";
+import { validate2FACode } from "@/lib/auth";
+import { ApiResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-
-    const body: LoginCredentials = await request.json();
-    const { email, password } = body;
-
-    // Validaciones básicas
-    if (!email || !password) {
+    const { email, codigo_2fa } = await request.json();
+    if (!email || !codigo_2fa) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Email y contraseña son requeridos",
+          message: "Email y código 2FA son requeridos",
         },
         { status: 400 }
       );
     }
-
-    // Buscar usuario por email
     const user = await Usuario.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
+    if (!user || !user.autenticacion_2FA) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: "Credenciales inválidas",
+          message: "Usuario no encontrado o 2FA no activado",
+        },
+        { status: 404 }
+      );
+    }
+    const valid = await validate2FACode(user, codigo_2fa);
+    if (!valid) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Código 2FA inválido o expirado",
         },
         { status: 401 }
       );
     }
-
-    // Verificar contraseña
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.contrasena_hash
-    );
-
-    if (!isPasswordValid) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Credenciales inválidas",
-        },
-        { status: 401 }
-      );
-    }
-
-    // Si el usuario tiene 2FA activado, no emitir JWT aún
-    if (user.autenticacion_2FA) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "2FA requerido",
-          twoFARequired: true,
-        },
-        { status: 401 }
-      );
-    }
-
     // Generar JWT
     const token = jwt.sign(
       {
@@ -74,8 +48,6 @@ export async function POST(request: NextRequest) {
       process.env.JWT_SECRET || "fallback-secret",
       { expiresIn: "7d" }
     );
-
-    // Crear respuesta con datos del usuario (sin contraseña)
     const userData = {
       _id: user._id,
       nombre_completo: user.nombre_completo,
@@ -85,14 +57,11 @@ export async function POST(request: NextRequest) {
       preferencias: user.preferencias,
       fecha_registro: user.fecha_registro,
     };
-
     const response = NextResponse.json<ApiResponse>({
       success: true,
       message: "Inicio de sesión exitoso",
       data: { user: userData },
     });
-
-    // Configurar cookie del token
     response.cookies.set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -100,10 +69,9 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 días
       path: "/",
     });
-
     return response;
   } catch (error) {
-    console.error("Error en login:", error);
+    console.error("Error en login 2FA:", error);
     return NextResponse.json<ApiResponse>(
       {
         success: false,
