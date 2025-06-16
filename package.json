@@ -18,11 +18,28 @@
   ],
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack && next lint",
+    "dev": "next dev --turbopack",
+    "dev:fast": "next dev --turbopack",
+    "dev:check": "pnpm run lint && pnpm run type-check && next dev --turbopack",
+    "dev:full": "pnpm run lint && pnpm run type-check && pnpm run build && next dev --turbopack",
     "build": "next build",
+    "build:check": "pnpm run lint && pnpm run type-check && next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx scripts/seed.ts"
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "seed": "tsx scripts/seed.ts",
+    "prepare": "husky",
+    "pre-commit": "lint-staged",
+    "pre-push": "pnpm run lint && pnpm run type-check && pnpm run build"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -68,7 +85,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "husky": "9.1.7",
     "leaflet": "^1.9.4",
+    "lint-staged": "16.1.2",
+    "prettier": "^3.5.3",
     "react-leaflet": "^5.0.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",

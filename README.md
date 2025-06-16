@@ -284,3 +284,82 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 ⭐ **¡Dale una estrella si te gusta el proyecto!** ⭐
+
+## 🚀 Scripts de Desarrollo
+
+### Scripts Principales
+
+```bash
+# Desarrollo rápido (recomendado para desarrollo diario)
+pnpm run dev
+
+# Desarrollo con checks de lint y tipos (sin build)
+pnpm run dev:check
+
+# Desarrollo con checks completos (lint + type-check + build + dev)
+pnpm run dev:full
+
+# Build de producción
+pnpm run build
+
+# Build con checks previos
+pnpm run build:check
+```
+
+### Scripts de Calidad de Código
+
+```bash
+# Linter
+pnpm run lint          # Verificar errores de lint
+pnpm run lint:fix      # Corregir errores de lint automáticamente
+
+# Type checking
+pnpm run type-check    # Verificar tipos de TypeScript
+
+# Datos de prueba
+pnpm run seed          # Poblar base de datos con datos de prueba
+```
+
+## 🔧 Git Hooks (Calidad de Código Automática)
+
+El proyecto tiene configurados **Git Hooks** que se ejecutan automáticamente:
+
+### Pre-commit Hook
+
+Se ejecuta **antes de cada commit**:
+
+- ✅ Ejecuta `lint-staged` (lint + prettier en archivos modificados)
+- ✅ Formatea código automáticamente
+
+### Pre-push Hook
+
+Se ejecuta **antes de cada push**:
+
+- ✅ Ejecuta `pnpm run lint` (verifica todo el proyecto)
+- ✅ Ejecuta `pnpm run type-check` (verifica tipos)
+- ✅ Ejecuta `pnpm run build` (verifica que compile)
+- ❌ **Bloquea el push si algún check falla**
+
+### Flujo de Trabajo Recomendado
+
+```bash
+# 1. Desarrollo rápido
+pnpm run dev
+
+# 2. Hacer cambios y commit (lint automático en archivos modificados)
+git add .
+git commit -m "feat: nueva funcionalidad"
+
+# 3. Push (verificación completa automática)
+git push origin main
+```
+
+### Beneficios
+
+- 🛡️ **Previene bugs** antes de llegar al repositorio
+- 🧹 **Mantiene código limpio** automáticamente
+- 🚀 **Asegura que el proyecto compile** antes de push
+- 👥 **Consistencia en el equipo** sin esfuerzo manual
+- ⚡ **Desarrollo rápido** sin checks innecesarios
+
+## 🏗️ Arquitectura

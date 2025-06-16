@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     console.log(
       `[REGISTER] Intento de registro para email: ${email} con rol: ${
         rol || "usuario"
-      }`
+      }`,
     );
 
     // Validaciones básicas
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
           success: false,
           message: "Todos los campos son requeridos",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
           success: false,
           message: "Formato de email inválido",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
           success: false,
           message: "La contraseña debe tener al menos 6 caracteres",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
             message:
               "Solo los administradores pueden crear usuarios con roles especiales",
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       if (rolesValidos.includes(rol)) {
         rolFinal = rol;
         console.log(
-          `[REGISTER] Admin ${admin.email} creando usuario con rol: ${rolFinal}`
+          `[REGISTER] Admin ${admin.email} creando usuario con rol: ${rolFinal}`,
         );
       } else {
         return NextResponse.json<ApiResponse>(
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
             success: false,
             message: "Rol inválido",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
           success: false,
           message: "El email ya está registrado",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     await newUser.save();
 
     console.log(
-      `[REGISTER] Usuario creado exitosamente - ID: ${newUser._id}, Email: ${email}, Rol: ${rolFinal}`
+      `[REGISTER] Usuario creado exitosamente - ID: ${newUser._id}, Email: ${email}, Rol: ${rolFinal}`,
     );
 
     // Respuesta exitosa (sin devolver información sensible)
@@ -144,19 +144,24 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("[REGISTER] Error en registro:", error);
 
     // Verificar si es un error de duplicado (por si el índice único falla)
-    if ((error as any).code === 11000) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: number }).code === 11000
+    ) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           message: "El email ya está registrado",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
         success: false,
         message: "Error interno del servidor",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
