@@ -147,9 +147,6 @@ export default function Header() {
                     Iniciar Sesión
                   </Button>
                 </Link>
-                <Link href="/register">
-                  <Button size="sm">Registrarse</Button>
-                </Link>
               </div>
             )}
           </div>
@@ -250,11 +247,6 @@ export default function Header() {
                     <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="outline" size="sm" className="w-full">
                         Iniciar Sesión
-                      </Button>
-                    </Link>
-                    <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                      <Button size="sm" className="w-full">
-                        Registrarse
                       </Button>
                     </Link>
                   </div>

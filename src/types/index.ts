@@ -85,6 +85,7 @@ export interface RegisterData {
   email: string;
   telefono: string;
   password: string;
+  rol?: "usuario" | "propietario_cancha" | "admin";
 }
 
 export interface ApiResponse<T = unknown> {

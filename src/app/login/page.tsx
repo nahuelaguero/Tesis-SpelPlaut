@@ -134,8 +134,13 @@ export default function LoginPage() {
         if (data.data) {
           const twoFAData = data.data as TwoFARequestData;
           if (twoFAData.developmentCode) {
-            console.log("🔐 CÓDIGO 2FA (DESARROLLO):", twoFAData.developmentCode);
-            setError(`✅ Código enviado. DESARROLLO: ${twoFAData.developmentCode}`);
+            console.log(
+              "🔐 CÓDIGO 2FA (DESARROLLO):",
+              twoFAData.developmentCode
+            );
+            setError(
+              `✅ Código enviado. DESARROLLO: ${twoFAData.developmentCode}`
+            );
           }
         }
       } else {
@@ -391,12 +396,12 @@ export default function LoginPage() {
         {/* Enlaces adicionales */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            ¿No tienes una cuenta?{" "}
+            ¿Problemas para acceder?{" "}
             <Link
-              href="/register"
+              href="/forgot-password"
               className="font-medium text-emerald-600 hover:text-emerald-500"
             >
-              Regístrate aquí
+              Recuperar contraseña
             </Link>
           </p>
         </div>

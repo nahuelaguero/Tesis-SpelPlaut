@@ -295,12 +295,21 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button
-                  onClick={() => router.push("/admin/usuarios")}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  Ver Usuarios
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => router.push("/admin/usuarios")}
+                    variant="outline"
+                    className="w-full border-purple-600 text-purple-600 hover:bg-purple-50"
+                  >
+                    Ver Usuarios
+                  </Button>
+                  <Button
+                    onClick={() => router.push("/register")}
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                  >
+                    Crear Usuario
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
