@@ -50,13 +50,13 @@ export default function HomePage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/register">
                 <Button
                   size="lg"
                   variant="outline"
                   className="border-white text-white hover:bg-white hover:text-emerald-600 px-8 py-4 text-lg"
                 >
-                  Iniciar Sesión
+                  Crear Cuenta Gratis
                 </Button>
               </Link>
             </div>
@@ -385,22 +385,22 @@ export default function HomePage() {
             reservar canchas deportivas.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/canchas">
+            <Link href="/register">
               <Button
                 size="lg"
                 className="bg-white text-emerald-600 hover:bg-gray-100 px-8 py-4 text-lg"
               >
-                Explorar Canchas
+                Crear Cuenta Gratis
                 <CheckCircle className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/canchas">
               <Button
                 size="lg"
                 variant="outline"
                 className="border-white text-white hover:bg-white hover:text-emerald-600 px-8 py-4 text-lg"
               >
-                Iniciar Sesión
+                Explorar Canchas
               </Button>
             </Link>
           </div>

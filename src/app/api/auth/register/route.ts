@@ -9,24 +9,13 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    // Verificar que sea administrador
-    const admin = requireAdmin(request);
-    if (!admin) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message:
-            "Acceso denegado. Solo administradores pueden crear usuarios",
-        },
-        { status: 403 }
-      );
-    }
-
     const body: RegisterData = await request.json();
     const { nombre_completo, email, telefono, password, rol } = body;
 
     console.log(
-      `[REGISTER] Admin ${admin.email} creando usuario para email: ${email}`
+      `[REGISTER] Intento de registro para email: ${email} con rol: ${
+        rol || "usuario"
+      }`
     );
 
     // Validaciones básicas
@@ -63,9 +52,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar rol si se proporciona
-    const rolesValidos = ["usuario", "propietario_cancha", "admin"];
-    const rolFinal = rol && rolesValidos.includes(rol) ? rol : "usuario";
+    // Determinar el rol y verificar permisos
+    let rolFinal = "usuario"; // Por defecto siempre es usuario para registro público
+
+    // Si se especifica un rol que no sea "usuario", verificar que sea admin
+    if (rol && rol !== "usuario") {
+      const admin = requireAdmin(request);
+      if (!admin) {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            message:
+              "Solo los administradores pueden crear usuarios con roles especiales",
+          },
+          { status: 403 }
+        );
+      }
+
+      // Validar que el rol sea válido
+      const rolesValidos = ["usuario", "propietario_cancha", "admin"];
+      if (rolesValidos.includes(rol)) {
+        rolFinal = rol;
+        console.log(
+          `[REGISTER] Admin ${admin.email} creando usuario con rol: ${rolFinal}`
+        );
+      } else {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            message: "Rol inválido",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // Verificar si el email ya existe
     const existingUser = await Usuario.findOne({ email: email.toLowerCase() });
@@ -102,14 +122,17 @@ export async function POST(request: NextRequest) {
     await newUser.save();
 
     console.log(
-      `[REGISTER] Usuario creado exitosamente por admin ${admin.email} - ID: ${newUser._id}, Email: ${email}, Rol: ${rolFinal}`
+      `[REGISTER] Usuario creado exitosamente - ID: ${newUser._id}, Email: ${email}, Rol: ${rolFinal}`
     );
 
     // Respuesta exitosa (sin devolver información sensible)
     return NextResponse.json<ApiResponse>(
       {
         success: true,
-        message: "Usuario creado exitosamente",
+        message:
+          rolFinal === "usuario"
+            ? "Cuenta creada exitosamente"
+            : "Usuario creado exitosamente",
         data: {
           user: {
             _id: newUser._id,

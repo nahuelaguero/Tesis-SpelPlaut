@@ -396,6 +396,15 @@ export default function LoginPage() {
         {/* Enlaces adicionales */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
+            ¿No tienes una cuenta?{" "}
+            <Link
+              href="/register"
+              className="font-medium text-emerald-600 hover:text-emerald-500"
+            >
+              Regístrate aquí
+            </Link>
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
             ¿Problemas para acceder?{" "}
             <Link
               href="/forgot-password"

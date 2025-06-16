@@ -304,7 +304,7 @@ export default function AdminPage() {
                     Ver Usuarios
                   </Button>
                   <Button
-                    onClick={() => router.push("/register")}
+                    onClick={() => router.push("/admin/usuarios/nuevo")}
                     className="w-full bg-purple-600 hover:bg-purple-700"
                   >
                     Crear Usuario

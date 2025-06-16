@@ -13,11 +13,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Shield,
+  Eye,
+  EyeOff,
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  ArrowLeft,
+} from "lucide-react";
 import { RegisterData, ApiResponse } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function RegisterPage() {
+export default function NuevoUsuarioPage() {
   // Todos los hooks al inicio
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -26,7 +41,7 @@ export default function RegisterPage() {
     email: "",
     telefono: "",
     password: "",
-    // No incluimos rol - siempre será "usuario" para registro público
+    rol: "usuario", // Valor por defecto
   });
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,11 +50,16 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Verificar si el usuario ya está autenticado
+  // Verificar autenticación y permisos de admin
   useEffect(() => {
-    if (!loading && user) {
-      // Si ya está autenticado, redirigir a la página principal
-      router.push("/");
+    if (!loading) {
+      if (!user) {
+        // Si no está autenticado, redirigir al login
+        router.push("/login");
+      } else if (user.rol !== "admin") {
+        // Si no es admin, redirigir al inicio
+        router.push("/");
+      }
     }
   }, [user, loading, router]);
 
@@ -50,16 +70,34 @@ export default function RegisterPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
           <p className="mt-2 text-gray-700 font-medium">
-            Verificando sesión...
+            Verificando permisos...
           </p>
         </div>
       </div>
     );
   }
 
-  // Si ya está autenticado, no mostrar el formulario
-  if (user) {
-    return null;
+  // Si no está autenticado o no es admin, no mostrar el contenido
+  if (!user || user.rol !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <AlertTriangle className="h-16 w-16 mx-auto text-red-500 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Acceso Denegado
+          </h3>
+          <p className="text-gray-700 font-medium mb-6">
+            Solo los administradores pueden crear nuevos usuarios.
+          </p>
+          <Button
+            onClick={() => router.push("/")}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            Volver al Inicio
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,6 +112,13 @@ export default function RegisterPage() {
     }
     // Limpiar errores cuando el usuario empiece a escribir
     if (error) setError("");
+  };
+
+  const handleRolChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      rol: value as "usuario" | "propietario_cancha" | "admin",
+    }));
   };
 
   const validateForm = (): string | null => {
@@ -126,10 +171,10 @@ export default function RegisterPage() {
         setSuccess(true);
         // Esperar un momento para mostrar el mensaje de éxito
         setTimeout(() => {
-          router.push("/login");
+          router.push("/admin/usuarios");
         }, 2000);
       } else {
-        setError(data.message || "Error al crear la cuenta");
+        setError(data.message || "Error al crear el usuario");
       }
     } catch (error) {
       console.error("Error en registro:", error);
@@ -148,14 +193,14 @@ export default function RegisterPage() {
               <div className="text-center space-y-4">
                 <CheckCircle className="h-16 w-16 text-emerald-600 mx-auto" />
                 <h2 className="text-2xl font-bold text-gray-900">
-                  ¡Cuenta creada exitosamente!
+                  ¡Usuario creado exitosamente!
                 </h2>
                 <p className="text-gray-600">
-                  Tu cuenta ha sido creada correctamente. Serás redirigido al
-                  login en unos segundos.
+                  El usuario ha sido creado correctamente con rol de{" "}
+                  {formData.rol?.replace("_", " ")}.
                 </p>
-                <Link href="/login">
-                  <Button className="w-full">Ir al Login</Button>
+                <Link href="/admin/usuarios">
+                  <Button className="w-full">Ver Usuarios</Button>
                 </Link>
               </div>
             </CardContent>
@@ -171,13 +216,13 @@ export default function RegisterPage() {
         {/* Logo y título */}
         <div className="text-center">
           <div className="flex justify-center">
-            <Calendar className="h-12 w-12 text-emerald-600" />
+            <Shield className="h-12 w-12 text-emerald-600" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Crear Cuenta
+            Crear Nuevo Usuario
           </h2>
           <p className="mt-2 text-sm text-gray-700 font-medium">
-            Únete a nuestra plataforma para reservar canchas
+            Panel de Administración - Gestión de Usuarios
           </p>
         </div>
 
@@ -185,10 +230,10 @@ export default function RegisterPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-gray-900 font-bold">
-              Datos de la cuenta
+              Datos del nuevo usuario
             </CardTitle>
             <CardDescription className="text-gray-700 font-medium">
-              Completa todos los campos para crear tu cuenta
+              Completa todos los campos para crear la cuenta
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -224,7 +269,7 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="tu@email.com"
+                  placeholder="usuario@email.com"
                   disabled={isLoading}
                 />
               </div>
@@ -242,6 +287,30 @@ export default function RegisterPage() {
                   placeholder="+595 961 123 456"
                   disabled={isLoading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rol">Rol del Usuario</Label>
+                <Select
+                  value={formData.rol}
+                  onValueChange={handleRolChange}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="usuario">Usuario</SelectItem>
+                    <SelectItem value="propietario_cancha">
+                      Propietario de Cancha
+                    </SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Usuario: Puede reservar canchas | Propietario: Puede gestionar
+                  canchas | Admin: Acceso completo
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -287,7 +356,7 @@ export default function RegisterPage() {
                     required
                     value={confirmPassword}
                     onChange={handleInputChange}
-                    placeholder="Confirma tu contraseña"
+                    placeholder="Confirma la contraseña"
                     disabled={isLoading}
                     className="pr-10"
                   />
@@ -312,10 +381,10 @@ export default function RegisterPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creando cuenta...
+                    Creando usuario...
                   </>
                 ) : (
-                  "Crear Cuenta"
+                  "Crear Usuario"
                 )}
               </Button>
             </form>
@@ -327,43 +396,35 @@ export default function RegisterPage() {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white text-gray-700 font-medium">
-                    ¿Ya tienes una cuenta?
+                    Panel de Administración
                   </span>
                 </div>
               </div>
 
-              <div className="mt-6">
-                <Link href="/login">
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <Link href="/admin">
                   <Button
                     variant="outline"
                     className="w-full"
                     disabled={isLoading}
                   >
-                    Iniciar Sesión
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link href="/admin/usuarios">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    Ver Usuarios
                   </Button>
                 </Link>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Términos */}
-        <div className="text-center text-sm text-gray-700 font-medium">
-          Al crear una cuenta, aceptas nuestros{" "}
-          <Link
-            href="/terminos"
-            className="text-emerald-600 hover:text-emerald-500 font-semibold"
-          >
-            Términos de Servicio
-          </Link>{" "}
-          y{" "}
-          <Link
-            href="/privacidad"
-            className="text-emerald-600 hover:text-emerald-500 font-semibold"
-          >
-            Política de Privacidad
-          </Link>
-        </div>
       </div>
     </div>
   );
