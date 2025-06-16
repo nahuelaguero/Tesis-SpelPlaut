@@ -55,15 +55,9 @@ export async function POST(request: NextRequest) {
                 <h3>Configuración Detectada:</h3>
                 <ul>
                   <li><strong>Modo:</strong> ${process.env.NODE_ENV}</li>
-                  <li><strong>Email Service:</strong> ${
-                    process.env.EMAIL_SERVICE || "MOCK"
-                  }</li>
-                  <li><strong>Email User:</strong> ${
-                    process.env.EMAIL_USER || "No configurado"
-                  }</li>
-                  <li><strong>SMTP Host:</strong> ${
-                    process.env.SMTP_HOST || "No configurado"
-                  }</li>
+                  <li><strong>Email Service:</strong> Gmail</li>
+                  <li><strong>Email User:</strong> ${process.env.EMAIL_USER}</li>
+                  <li><strong>SMTP Host:</strong> smtp.gmail.com</li>
                 </ul>
               </div>
               <p>Si ves este mensaje, el sistema de email está funcionando correctamente.</p>
@@ -79,9 +73,9 @@ Este es un email de prueba del sistema SpelPlaut.
 
 Configuración Detectada:
 - Modo: ${process.env.NODE_ENV}
-- Email Service: ${process.env.EMAIL_SERVICE || "MOCK"}
-- Email User: ${process.env.EMAIL_USER || "No configurado"}
-- SMTP Host: ${process.env.SMTP_HOST || "No configurado"}
+- Email Service: Gmail
+- Email User: ${process.env.EMAIL_USER}
+- SMTP Host: smtp.gmail.com
 
 Si ves este mensaje, el sistema de email está funcionando correctamente.
 
@@ -97,9 +91,9 @@ SpelPlaut - Sistema de Reservas de Canchas
         : "❌ Error enviando email",
       config: {
         mode: process.env.NODE_ENV,
-        service: process.env.EMAIL_SERVICE || "MOCK",
-        hasEmailUser: !!process.env.EMAIL_USER,
-        hasSmtpHost: !!process.env.SMTP_HOST,
+        service: "Gmail",
+        emailUser: process.env.EMAIL_USER,
+        smtpHost: "smtp.gmail.com",
       },
     });
   } catch (error) {
@@ -123,9 +117,9 @@ export async function GET() {
     availableTypes: ["test", "confirmacion"],
     config: {
       mode: process.env.NODE_ENV,
-      service: process.env.EMAIL_SERVICE || "MOCK",
-      hasEmailUser: !!process.env.EMAIL_USER,
-      hasSmtpHost: !!process.env.SMTP_HOST,
+      service: "Gmail",
+      emailUser: process.env.EMAIL_USER,
+      smtpHost: "smtp.gmail.com",
     },
   });
 }
