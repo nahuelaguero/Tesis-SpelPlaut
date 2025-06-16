@@ -27,16 +27,19 @@ El sistema implementa **3 roles principales** con permisos específicos:
 - ✅ **Recibir notificaciones** por email
 - 🔍 **Navegación**: "Canchas" + "Mis Reservas" + "Perfil"
 
-#### 🟡 **Propietario de Cancha** (`propietario_cancha`)
+#### 🟡 **Propietario de Cancha** (`propietario_cancha`) - **SOPORTE MULTI-CANCHA** 🆕
 
-- ❌ **NO puede hacer reservas** (solo gestiona su cancha)
-- ✅ **Dashboard exclusivo** con estadísticas de su cancha
-- ✅ **Ver todas las reservas** de su cancha únicamente
-- ✅ **Análisis de ingresos** y ocupación
-- ✅ **Gestión de disponibilidad** de su cancha
-- ✅ **Reportes específicos** de su negocio
-- 🔍 **Navegación**: Solo "Mi Cancha" + "Perfil"
-- 📊 **Datos aislados**: Solo ve información de su cancha asignada
+- ❌ **NO puede hacer reservas** (solo gestiona sus canchas)
+- ✅ **Dashboard exclusivo** con estadísticas consolidadas y por cancha
+- ✅ **Gestión de múltiples canchas** - Un propietario puede tener varias canchas
+- ✅ **Selector de cancha** para ver estadísticas específicas o consolidadas
+- ✅ **Ver todas las reservas** de sus canchas únicamente
+- ✅ **Análisis de ingresos** y ocupación por cancha o consolidado
+- ✅ **Gestión de disponibilidad** de todas sus canchas
+- ✅ **Reportes específicos** de su negocio multi-cancha
+- 🔍 **Navegación**: Solo "Mi Dashboard" + "Perfil"
+- 📊 **Datos aislados**: Solo ve información de sus canchas asignadas
+- 🏢 **Escalabilidad empresarial**: Soporte para crecimiento del negocio
 
 #### 🔴 **Administrador** (`admin`)
 
@@ -45,6 +48,7 @@ El sistema implementa **3 roles principales** con permisos específicos:
 - ✅ **Panel de administración** completo
 - ✅ **Gestión de usuarios** y roles
 - ✅ **CRUD de canchas** (crear, editar, eliminar)
+- ✅ **Asignación de múltiples canchas** a propietarios
 - ✅ **Ver TODAS las reservas** del sistema
 - ✅ **Reportes globales** y estadísticas
 - ✅ **Moderación de contenido**
@@ -52,15 +56,20 @@ El sistema implementa **3 roles principales** con permisos específicos:
 
 #### 🔒 **Restricciones de Seguridad**
 
-- **Propietarios** solo ven datos de su `cancha_id` asignada
+- **Propietarios** solo ven datos de sus canchas asignadas (`propietario_id`)
 - **APIs protegidas** con validación de roles en cada endpoint
 - **Navegación dinámica** según el rol del usuario
 - **Redirecciones automáticas** si se intenta acceso no autorizado
 - **Aislamiento de datos** entre propietarios
+- **Arquitectura 1:N** - Un propietario puede tener múltiples canchas
 
-### 🏟️ Gestión de Canchas
+### 🏟️ Gestión de Canchas - **ARQUITECTURA MULTI-CANCHA** 🆕
 
-- CRUD completo para canchas deportivas
+- **CRUD completo** para canchas deportivas
+- **Soporte multi-cancha por propietario** - Arquitectura escalable 1:N
+- **Dashboard consolidado** con estadísticas de todas las canchas del propietario
+- **Vista específica por cancha** con estadísticas individuales
+- **Selector inteligente** para alternar entre vista consolidada y específica
 - Soporte para múltiples tipos (fútbol, futsal, básquet, tenis, pádel, vóleibol)
 - Sistema de imágenes con drag & drop
 - Gestión de horarios y disponibilidad
@@ -77,6 +86,7 @@ El sistema implementa **3 roles principales** con permisos específicos:
 ### 📅 Reservas Inteligentes
 
 - Calendario interactivo integrado
+- **Campo `duracion_horas`** con validación (0.5-24 horas)
 - Validación de disponibilidad en tiempo real
 - Sistema de reservas con confirmación
 - Gestión de horarios flexibles
@@ -92,6 +102,7 @@ El sistema implementa **3 roles principales** con permisos específicos:
 
 - Dashboard completo para administradores
 - Gestión de usuarios y canchas
+- **Asignación de múltiples canchas** a propietarios
 - Reportes y estadísticas
 - Moderación de contenido
 
@@ -102,7 +113,7 @@ El sistema implementa **3 roles principales** con permisos específicos:
 - **Next.js 14** - Framework React con App Router
 - **TypeScript** - Tipado estático
 - **Tailwind CSS** - Diseño responsivo
-- **Radix UI** - Componentes accesibles
+- **Radix UI** - Componentes accesibles (`@radix-ui/react-select`, `@radix-ui/react-switch`)
 - **React Hook Form** - Manejo de formularios
 
 ### Backend
@@ -181,15 +192,17 @@ src/
 ├── app/                    # App Router (Next.js 14)
 │   ├── admin/             # Panel de administración
 │   ├── api/               # API Routes
-│   ├── auth/              # Páginas de autenticación
+│   │   ├── propietario/   # 🆕 APIs específicas para propietarios multi-cancha
+│   │   └── reservas/      # APIs de reservas con soporte multi-cancha
+│   ├── mi-cancha/         # 🆕 Dashboard multi-cancha para propietarios
 │   └── ...
 ├── components/            # Componentes reutilizables
-│   ├── ui/               # Componentes base
+│   ├── ui/               # Componentes base (Select, Switch con Radix UI)
 │   ├── forms/            # Formularios específicos
 │   └── ...
 ├── lib/                  # Utilidades y configuraciones
 ├── hooks/                # Custom React hooks
-├── types/                # Definiciones TypeScript
+├── types/                # 🆕 Definiciones TypeScript actualizadas (PropietarioDashboard)
 └── utils/                # Funciones helper
 
 docs/                     # 📚 Documentación completa
@@ -198,189 +211,58 @@ docs/                     # 📚 Documentación completa
 └── ...
 ```
 
-## 📚 Documentación Completa
+## 🆕 Nuevas Funcionalidades - Soporte Multi-Cancha
 
-La documentación detallada se encuentra en la carpeta `docs/`:
+### 🏢 Arquitectura Empresarial
 
-### 🏗️ Arquitectura y Diseño
+- **Relación 1:N** - Un propietario puede gestionar múltiples canchas
+- **Dashboard consolidado** con estadísticas de todas las canchas
+- **Vista específica** por cancha seleccionada
+- **Escalabilidad** para crecimiento del negocio
 
-- [`DIAGRAMA-BASE-DATOS.md`](docs/DIAGRAMA-BASE-DATOS.md) - Esquema de base de datos
-- [`DIAGRAMA-FISICO-MONGODB.md`](docs/DIAGRAMA-FISICO-MONGODB.md) - Estructura MongoDB
-- [`ANALISIS-DISPONIBILIDAD-CANCHAS.md`](docs/ANALISIS-DISPONIBILIDAD-CANCHAS.md) - Lógica de disponibilidad
-- [`SISTEMA-ROLES-PERMISOS.md`](docs/SISTEMA-ROLES-PERMISOS.md) - **Sistema de roles y permisos**
+### 📊 Dashboard Propietario Mejorado
 
-### 🌍 Funcionalidades Avanzadas
+- **Selector de cancha** con opciones:
+  - 📊 Vista Consolidada (todas las canchas)
+  - 🏟️ Vista específica por cancha
+- **Estadísticas consolidadas**:
+  - Total de canchas
+  - Reservas y ingresos combinados
+  - Ocupación promedio general
+- **Estadísticas por cancha**:
+  - Métricas específicas de la cancha seleccionada
+  - Comparación de rendimiento
 
-- [`GEOLOCATION-SEARCH-SYSTEM.md`](docs/GEOLOCATION-SEARCH-SYSTEM.md) - Sistema de geolocalización
-- [`README-EMAIL.md`](docs/README-EMAIL.md) - Configuración de emails
+### 🔧 Mejoras Técnicas
 
-### 🔧 Desarrollo y Evaluación
+- **Modelo de datos actualizado**:
+  - Eliminado `cancha_id` del modelo Usuario
+  - Mantenido `propietario_id` en modelo Cancha
+  - Agregado `duracion_horas` al modelo Reserva
+- **APIs optimizadas**:
+  - `/api/propietario/dashboard` con soporte query `?cancha_id=xxx`
+  - Consultas MongoDB optimizadas para múltiples canchas
+- **Componentes UI mejorados**:
+  - Componente Select con Radix UI
+  - Interfaz intuitiva para gestión multi-cancha
 
-- [`EVALUACION-BACKEND-REAL.md`](docs/EVALUACION-BACKEND-REAL.md) - Análisis del backend
-- [`REQUERIMIENTOS-FALTANTES.md`](docs/REQUERIMIENTOS-FALTANTES.md) - Funcionalidades pendientes
-- [`HANDOFF-CURSOR-AGENT.md`](docs/HANDOFF-CURSOR-AGENT.md) - Guía para desarrolladores
+## 🧪 Testing y Calidad
 
-## 🎯 Estado del Proyecto
+- ✅ **ESLint** configurado con reglas estrictas
+- ✅ **TypeScript** sin tipos `any`
+- ✅ **Código limpio** sin imports no utilizados
+- ✅ **Arquitectura escalable** para crecimiento empresarial
 
-### ✅ Completado
+## 📈 Roadmap
 
-- [x] Sistema de autenticación completo
-- [x] **Sistema 2FA por email** con códigos de 6 dígitos
-- [x] **Sistema de roles y permisos** (usuario, propietario, admin)
-- [x] **Dashboard propietario** con estadísticas completas
-- [x] **Aislamiento de datos** por rol
-- [x] **Navegación dinámica** según permisos
-- [x] CRUD de canchas con geolocalización
-- [x] Sistema de reservas con calendario
-- [x] APIs REST funcionales y protegidas
-- [x] Panel de administración completo
-- [x] Sistema de emails
-- [x] Búsqueda avanzada con filtros
-- [x] Validación robusta
-- [x] PWA básica
-- [x] **Build de producción** optimizado
+- [ ] **Mapa real** con Leaflet
+- [ ] **Sistema de imágenes** con Cloudinary/S3
+- [ ] **Integración real** con Bancard
+- [ ] **Dashboard admin** UI completo
+- [ ] **Notificaciones push** PWA
+- [ ] **Analytics avanzados** por cancha
 
-### 🔄 En Desarrollo
-
-- [ ] Mapas interactivos (Leaflet)
-- [ ] Sistema de imágenes real (Cloudinary)
-- [ ] Integración completa Bancard
-- [ ] Dashboard de analytics avanzado
-
-### 📋 Próximas Funcionalidades
-
-- [ ] Sistema de calificaciones y reviews
-- [ ] Chat en tiempo real
-- [ ] Notificaciones push
-- [ ] Modo offline completo
-
-## 🔧 Troubleshooting y Configuración
-
-### 🔐 Sistema 2FA (Verificación en Dos Pasos)
-
-#### Configuración de Base de Datos
-
-**⚠️ IMPORTANTE**: La aplicación usa MongoDB Atlas con la siguiente configuración:
-
-```env
-MONGODB_URI=mongodb+srv://nahuelaguerosan:CDaHO2t0v8L8Q9Y9@cluster0.nisl1og.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-```
-
-#### Estructura de Datos
-
-- **Base de datos**: `test` (por defecto en MongoDB Atlas)
-- **Colección de usuarios**: `users` (no `usuarios`)
-- **Campo 2FA**: `autenticacion_2FA: boolean`
-
-#### Verificar Estado 2FA
-
-Para verificar si un usuario tiene 2FA activado, usa este script:
-
-```javascript
-// check-user-2fa.js
-const { MongoClient } = require("mongodb");
-
-const uri =
-  "mongodb+srv://nahuelaguerosan:CDaHO2t0v8L8Q9Y9@cluster0.nisl1og.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-async function checkUser() {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db("test");
-    const user = await db.collection("users").findOne({
-      email: "tu-email@gmail.com",
-    });
-
-    console.log("2FA activado:", user?.autenticacion_2FA);
-    console.log("Rol:", user?.rol);
-  } finally {
-    await client.close();
-  }
-}
-
-checkUser();
-```
-
-#### Flujo 2FA Completo
-
-1. **Activación**:
-
-   - Usuario va a Perfil → Seguridad
-   - Activa el switch de 2FA
-   - Sistema envía código por email
-   - Usuario ingresa código para confirmar
-
-2. **Login con 2FA**:
-
-   - Usuario ingresa email/contraseña
-   - Si tiene 2FA activado, se solicita código
-   - Sistema envía código por email
-   - Usuario ingresa código para completar login
-
-3. **Códigos 2FA**:
-   - 6 dígitos numéricos
-   - Expiran en 10 minutos
-   - Se muestran en consola del servidor (modo desarrollo)
-   - Se guardan en `dev-emails.log`
-
-#### Problemas Comunes
-
-**❌ "Usuario no encontrado" en login**
-
-- Verificar que estés usando la base de datos correcta (`test`)
-- Verificar que la colección sea `users` no `usuarios`
-
-**❌ "2FA no se muestra como activado"**
-
-- El estado se guarda correctamente en BD pero puede haber delay en UI
-- Refrescar la página o cerrar/abrir sesión
-
-**❌ "No recibo códigos 2FA"**
-
-- En desarrollo, los códigos aparecen en:
-  - Consola del servidor
-  - Archivo `dev-emails.log`
-- En producción, configurar SMTP real
-
-### 📧 Configuración de Email
-
-#### Modo Desarrollo (MOCK)
-
-```env
-EMAIL_SERVICE=mock
-```
-
-- Los emails se guardan en `dev-emails.log`
-- Los códigos 2FA aparecen en consola
-
-#### Modo Producción
-
-```env
-EMAIL_SERVICE=smtp
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=tu-email@gmail.com
-SMTP_PASS=tu-app-password
-```
-
-### 🗄️ Base de Datos
-
-#### Conexión MongoDB Atlas
-
-- Usar la URI completa con credenciales
-- Base de datos por defecto: `test`
-- Colecciones principales: `users`, `canchas`, `reservas`
-
-#### Verificar Conexión
-
-```bash
-# Instalar MongoDB Compass
-# Conectar con la URI del .env.local
-# Verificar que existan las colecciones
-```
-
-## 🤝 Contribuir
+## 🤝 Contribución
 
 1. Fork el proyecto
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
@@ -390,19 +272,15 @@ SMTP_PASS=tu-app-password
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
 
-## 👥 Autores
+## 👨‍💻 Autor
 
-- **Nahuel Aguero** - _Desarrollo inicial_
+**Nahuel Agüero**
 
-## 🙏 Agradecimientos
-
-- Comunidad de Next.js por el excelente framework
-- OpenStreetMap por los servicios de geocodificación gratuitos
-- Vercel por el hosting y deployment simplificado
-- MongoDB por la excelente base de datos NoSQL
+- Email: nahuel.aguerosan@gmail.com
+- GitHub: [@nahuelaguero]
 
 ---
 
-**Nota**: Este proyecto está optimizado para Paraguay pero puede adaptarse fácilmente a otros países modificando las validaciones geográficas y el sistema de pagos.
+⭐ **¡Dale una estrella si te gusta el proyecto!** ⭐
