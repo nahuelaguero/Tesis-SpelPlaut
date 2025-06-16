@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 
 const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://admin:admin123@cluster0.mongodb.net/spelplaut?retryWrites=true&w=majority"; // Revertido a Atlas
+  process.env.MONGODB_URI || "mongodb://localhost:27017/spelplaut"; // Usar base de datos local
 
 if (!MONGODB_URI) {
   throw new Error(
