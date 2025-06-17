@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,14 +62,6 @@ export default function LoginPage() {
   const [is2FALoading, setIs2FALoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Efecto para enviar código 2FA automáticamente cuando se requiere
-  useEffect(() => {
-    if (requires2FA && !emailSent) {
-      handleRequest2FACode();
-      setEmailSent(true);
-    }
-  }, [requires2FA, emailSent]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -119,7 +111,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleRequest2FACode = async () => {
+  const handleRequest2FACode = useCallback(async () => {
     setIs2FALoading(true);
     setError("");
 
@@ -167,7 +159,15 @@ export default function LoginPage() {
     } finally {
       setIs2FALoading(false);
     }
-  };
+  }, [formData.email, formData.password]);
+
+  // Efecto para enviar código 2FA automáticamente cuando se requiere
+  useEffect(() => {
+    if (requires2FA && !emailSent) {
+      handleRequest2FACode();
+      setEmailSent(true);
+    }
+  }, [requires2FA, emailSent, handleRequest2FACode]);
 
   const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault();
