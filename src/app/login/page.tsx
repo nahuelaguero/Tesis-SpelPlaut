@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +60,15 @@ export default function LoginPage() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFACode, setTwoFACode] = useState("");
   const [is2FALoading, setIs2FALoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Efecto para enviar código 2FA automáticamente cuando se requiere
+  useEffect(() => {
+    if (requires2FA && !emailSent) {
+      handleRequest2FACode();
+      setEmailSent(true);
+    }
+  }, [requires2FA, emailSent]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -89,6 +98,7 @@ export default function LoginPage() {
         if (data.twoFARequired) {
           // Usuario requiere 2FA
           setRequires2FA(true);
+          setEmailSent(false); // Resetear para que se envíe el email automáticamente
           setError(""); // Limpiar errores
         } else if (data.data) {
           // Login exitoso sin 2FA
@@ -142,13 +152,18 @@ export default function LoginPage() {
               `✅ Código enviado. DESARROLLO: ${twoFAData.developmentCode}`
             );
           }
+        } else {
+          // En producción, solo mostrar mensaje de éxito
+          setError("✅ Código de verificación enviado a tu email");
         }
       } else {
         setError(data.message || "Error al enviar código 2FA");
+        setEmailSent(false); // Permitir reintento
       }
     } catch (error) {
       console.error("Error al solicitar código 2FA:", error);
       setError("Error de conexión al solicitar código 2FA");
+      setEmailSent(false); // Permitir reintento
     } finally {
       setIs2FALoading(false);
     }
@@ -196,6 +211,7 @@ export default function LoginPage() {
     setRequires2FA(false);
     setTwoFACode("");
     setError("");
+    setEmailSent(false);
   };
 
   return (
@@ -322,9 +338,16 @@ export default function LoginPage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
                     <p className="text-sm text-blue-800">
-                      Se ha enviado un código de verificación a tu email:{" "}
+                      {emailSent
+                        ? "Se ha enviado un código de verificación a tu email:"
+                        : "Enviando código de verificación a tu email:"}{" "}
                       <span className="font-medium">{formData.email}</span>
                     </p>
+                    {!emailSent && (
+                      <div className="flex justify-center mt-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -375,7 +398,10 @@ export default function LoginPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={handleRequest2FACode}
+                        onClick={() => {
+                          setEmailSent(false);
+                          handleRequest2FACode();
+                        }}
                         disabled={is2FALoading}
                         className="flex-1"
                       >

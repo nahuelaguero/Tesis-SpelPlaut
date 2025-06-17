@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email } = body;
 
+    console.log(`[2FA-EMAIL] Solicitud de código 2FA para email: ${email}`);
+
     // Si no hay email en el body, intentar obtener usuario autenticado
     let user;
     if (email) {
@@ -68,7 +70,13 @@ export async function POST(request: NextRequest) {
     await user.save();
 
     // Enviar email
-    await send2FAEmail(user.email, user.nombre_completo, code);
+    console.log(`[2FA-EMAIL] Enviando código ${code} a ${user.email}`);
+    const emailSent = await send2FAEmail(
+      user.email,
+      user.nombre_completo,
+      code
+    );
+    console.log(`[2FA-EMAIL] Email enviado: ${emailSent}`);
 
     // En desarrollo, incluir el código en la respuesta para facilitar testing
     const responseData: {

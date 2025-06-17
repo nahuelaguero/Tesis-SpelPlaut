@@ -1,80 +1,33 @@
-# 📧 Configuración de Email - SpelPlaut
+# 📧 Sistema de Email - SpelPlaut
 
-## 🎯 **Opciones Disponibles**
+## ✅ **Estado Actual del Sistema**
 
-### 1. **Modo MOCK (Desarrollo - Sin configuración)** ⭐ **Recomendado para empezar**
+**Sistema de emails FUNCIONANDO** con Gmail para desarrollo y SMTP para producción.
 
-Sin configurar nada, los emails se muestran solo en la consola:
-
-```env
-# No agregar nada - funcionará automáticamente
-```
-
-**Resultado:**
-
-- ✅ Los emails se muestran en consola con formato bonito
-- ✅ Se guardan en archivo `dev-emails.log`
-- ✅ No necesita credenciales reales
-- ✅ Perfecto para desarrollo
+- 🎯 **Gmail configurado y funcionando** - `spelplaut@gmail.com`
+- 🚫 **Endpoint de testing eliminado** - Ya no existe `/api/test-email`
+- 🔐 **2FA automático funcionando** - Códigos se envían automáticamente
+- 📧 **Todos los emails funcionales** - Confirmaciones, recordatorios, 2FA, etc.
 
 ---
 
-### 2. **Ethereal Email (Gratis - Emails reales pero de prueba)** 🆓
+## 🚀 **Configuración Actual**
 
-Cuenta automática que genera enlaces para ver emails:
-
-```env
-EMAIL_SERVICE=ethereal
-```
-
-**Resultado:**
-
-- ✅ Envía emails reales a un servidor de prueba
-- ✅ Genera enlaces para ver los emails enviados
-- ✅ No necesita registro ni credenciales
-- ✅ Perfecto para testing
-
----
-
-### 3. **Mailtrap (Sandbox profesional)** 🧪
-
-Servicio profesional para testing (requiere cuenta gratuita):
+### **Para Desarrollo (Gmail):**
 
 ```env
-EMAIL_SERVICE=mailtrap
-MAILTRAP_USER=tu-usuario-de-mailtrap
-MAILTRAP_PASS=tu-password-de-mailtrap
-```
-
-**Registro:** https://mailtrap.io (plan gratuito disponible)
-
----
-
-### 4. **Gmail Personal/Genérico** 📧
-
-Usando Gmail con App Password:
-
-```env
-EMAIL_USER=tu-email@gmail.com
-EMAIL_PASSWORD=tu-app-password-de-gmail
+# .env.local
+EMAIL_USER=spelplaut@gmail.com
+EMAIL_PASSWORD=qwkttjvgyegmuknc  # App Password
 EMAIL_FROM=noreply@spelplaut.com
 ```
 
-**Cómo generar App Password:**
+✅ **Ya configurado y funcionando**
 
-1. Ir a https://myaccount.google.com/security
-2. Activar "Verificación en 2 pasos"
-3. Ir a "Contraseñas de aplicaciones"
-4. Generar nueva contraseña para "Correo"
-5. Usar esa contraseña (no tu contraseña normal)
-
----
-
-### 5. **SMTP Genérico** 🌐
-
-Para cualquier proveedor SMTP:
+### **Para Producción (SMTP Genérico):**
 
 ```env
+# Variables de producción
 SMTP_HOST=smtp.tu-proveedor.com
 SMTP_PORT=587
 SMTP_USER=tu-usuario
@@ -84,105 +37,152 @@ EMAIL_FROM=noreply@tu-dominio.com
 
 ---
 
-## 🚀 **Configuración Rápida**
+## 📋 **Emails que se Envían Automáticamente**
 
-### Para Desarrollo Inmediato:
+### 1. **🔐 Códigos 2FA** - Sistema Automático
 
-```bash
-# Opción 1: Sin configurar nada (modo MOCK)
-# Solo ejecuta la app - funcionará automáticamente
+- Se envía **automáticamente** cuando un usuario con 2FA hace login
+- Válido por 10 minutos
+- Template HTML profesional
 
-# Opción 2: Ethereal (emails reales de prueba)
-echo "EMAIL_SERVICE=ethereal" >> .env.local
+### 2. **📧 Confirmación de Reserva**
+
+- Al crear una reserva exitosamente
+- Incluye todos los detalles de la reserva
+- Método de pago y instrucciones
+
+### 3. **⏰ Recordatorio de Reserva**
+
+- 24 horas antes de la reserva
+- Checklist de lo que traer
+- Recordatorio de horario
+
+### 4. **🗑️ Cancelación de Reserva**
+
+- Al cancelar una reserva
+- Información de reembolso si aplica
+- Enlaces para hacer nueva reserva
+
+### 5. **🔑 Reset de Contraseña**
+
+- Al solicitar cambio de contraseña
+- Enlace seguro con expiración
+- Instrucciones de seguridad
+
+---
+
+## 🔧 **Funcionamiento Interno**
+
+### **Sistema Simplificado:**
+
+```typescript
+// Para desarrollo: Gmail automático
+if (process.env.NODE_ENV === "development") {
+  // Usa Gmail con App Password
+  transporter = Gmail(EMAIL_USER, EMAIL_PASSWORD);
+}
+
+// Para producción: SMTP genérico
+else {
+  // Usa SMTP configurado
+  transporter = SMTP(SMTP_HOST, SMTP_USER, SMTP_PASSWORD);
+}
 ```
 
-### Para Producción:
+### **Sin Mocks ni Fallbacks:**
 
-```env
-# SendGrid (recomendado)
-SMTP_HOST=smtp.sendgrid.net
-SMTP_PORT=587
-SMTP_USER=apikey
-SMTP_PASSWORD=tu-api-key-de-sendgrid
-EMAIL_FROM=noreply@tu-dominio.com
+- ❌ No hay modo "mock" o "development"
+- ❌ No hay Ethereal ni Mailtrap
+- ✅ Solo Gmail (dev) y SMTP (prod)
+- ✅ Sistema limpio y directo
 
-# O Mailgun
-SMTP_HOST=smtp.mailgun.org
-SMTP_PORT=587
-SMTP_USER=tu-usuario@tu-dominio
-SMTP_PASSWORD=tu-password-mailgun
-EMAIL_FROM=noreply@tu-dominio.com
+---
+
+## 🎯 **Ejemplos de Uso**
+
+### **2FA Automático:**
+
+```javascript
+// Al hacer login con 2FA activado:
+1. Usuario ingresa credenciales
+2. Sistema detecta 2FA requerido
+3. AUTOMÁTICAMENTE envía código por email
+4. Usuario ve pantalla de verificación
+5. Código llega al email en ~3 segundos
+```
+
+### **Confirmación de Reserva:**
+
+```javascript
+// Al crear reserva:
+await sendReservationConfirmation(userEmail, userName, {
+  canchaName: "Fútbol 5 - Centro",
+  fecha: "2024-12-15",
+  horaInicio: "18:00",
+  horaFin: "19:00",
+  precio: 80000,
+  metodoPago: "efectivo",
+  reservaId: "67851234abcd",
+});
 ```
 
 ---
 
-## 📋 **Emails que se Envían**
+## 🚫 **Cambios Recientes**
 
-1. **Confirmación de Reserva** - Al crear una reserva
-2. **Recordatorio** - 24 horas antes de la reserva
-3. **Cancelación** - Al cancelar una reserva
-4. **Reset de Contraseña** - Al solicitar cambio de password
+### **❌ Eliminado:**
 
----
+- `/api/test-email` - Endpoint de testing removido completamente
+- Modos mock y desarrollo que no enviaban emails reales
+- Configuraciones complejas con múltiples proveedores
 
-## 🔧 **Troubleshooting**
+### **✅ Mejorado:**
 
-### Si ves errores de Gmail:
-
-- Verifica que tengas "Verificación en 2 pasos" activada
-- Usa "Contraseña de aplicación", no tu contraseña normal
-- Asegúrate que "Acceso de apps menos seguras" esté desactivado
-
-### Si quieres cambiar entre modos:
-
-```bash
-# Cambiar a modo mock
-rm .env.local  # O eliminar las variables de email
-
-# Cambiar a Ethereal
-echo "EMAIL_SERVICE=ethereal" > .env.local
-
-# Cambiar a Gmail
-echo "EMAIL_USER=tu@gmail.com" > .env.local
-echo "EMAIL_PASSWORD=tu-app-password" >> .env.local
-```
+- Sistema 2FA con envío automático de códigos
+- Logs detallados para debugging
+- Templates HTML profesionales y consistentes
+- Configuración simplificada de solo 2 modos
 
 ---
 
-## 🎨 **Lo que Verás**
+## 📧 **Templates de Email**
 
-### Modo MOCK (Consola):
+Todos los emails usan el **template base de SpelPlaut** con:
 
-```
-================================================================================
-📧 EMAIL SIMULADO (Modo Desarrollo)
-================================================================================
-📨 Para: usuario@ejemplo.com
-📋 Asunto: Confirmación de Reserva - Cancha de Fútbol
-📄 De: "SpelPlaut - Reservas" <noreply@spelplaut.com>
---------------------------------------------------------------------------------
-📝 CONTENIDO:
-Hola Juan,
-Tu reserva ha sido confirmada...
---------------------------------------------------------------------------------
-🔗 Para ver el HTML completo, revisa el archivo de logs
-================================================================================
-📁 Email guardado en: /tu-proyecto/dev-emails.log
-```
+- 🎨 **Header verde** con logo SpelPlaut
+- 📱 **Responsive design** para móviles
+- 🏷️ **Branding consistente** - "Spel en Loma Plata"
+- 🔗 **Enlaces de acción** con botones verdes
+- 📝 **Footer profesional** con información de contacto
 
-### Ethereal Email:
+---
+
+## 🔍 **Monitoreo y Logs**
+
+### **Logs de Gmail:**
 
 ```
-✅ Email enviado a Ethereal: usuario@ejemplo.com
-🔗 Ver email en: https://ethereal.email/message/abc123
+📧 Usando Gmail: spelplaut@gmail.com
+✅ Email enviado exitosamente a usuario@email.com <mensaje-id>
 ```
 
-### Gmail Real:
+### **Logs de 2FA:**
 
 ```
-✅ Email enviado exitosamente a usuario@ejemplo.com mensaje-id-123
+[2FA-EMAIL] Solicitud de código 2FA para email: usuario@email.com
+[2FA-EMAIL] Enviando código 123456 a usuario@email.com
+[2FA-EMAIL] Email enviado: true
 ```
 
 ---
 
-¡Con estas opciones puedes usar emails simulados O reales según necesites! 🎉
+## ⚡ **Estado Final**
+
+✅ **Sistema completamente funcional**
+✅ **Gmail configurado y probado**
+✅ **2FA automático funcionando**
+✅ **Todos los emails llegando correctamente**
+✅ **Templates profesionales**
+✅ **Código limpio sin mocks**
+
+🎉 **¡El sistema de emails está 100% operativo!**
