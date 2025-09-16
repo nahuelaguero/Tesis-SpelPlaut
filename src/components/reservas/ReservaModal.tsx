@@ -214,7 +214,9 @@ export function ReservaModal({
               </div>
               <div className="flex justify-between">
                 <span>Duración:</span>
-                <span className="font-medium">{duracion} hora(s)</span>
+                <span className="font-medium">
+                  {duracion} hora{duracion !== 1 ? "s" : ""}
+                </span>
               </div>
               <div className="flex justify-between border-t pt-2">
                 <span className="font-semibold">Total:</span>

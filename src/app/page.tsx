@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import {
   Calendar,
   Clock,
@@ -539,15 +540,15 @@ export default function HomePage() {
               <ul className="space-y-2 text-gray-400">
                 <li>
                   <Link
-                    href="/terminos"
+                    href="/terminos-condiciones"
                     className="hover:text-white transition-colors"
                   >
-                    Términos de Servicio
+                    Términos y Condiciones
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="/privacidad"
+                    href="/politica-privacidad"
                     className="hover:text-white transition-colors"
                   >
                     Política de Privacidad

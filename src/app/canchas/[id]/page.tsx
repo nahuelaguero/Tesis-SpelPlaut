@@ -541,7 +541,10 @@ export default function CanchaDetailsPage() {
                       Resumen de la reserva:
                     </h3>
                     <div className="space-y-1 text-sm text-emerald-700">
-                      <p>Duración: {calculateDuration().toFixed(1)} hora(s)</p>
+                      <p>
+                        Duración: {calculateDuration().toFixed(1)} hora
+                        {calculateDuration() !== 1 ? "s" : ""}
+                      </p>
                       <p>
                         Precio por hora: {formatPrice(cancha.precio_por_hora)}
                       </p>
@@ -560,8 +563,8 @@ export default function CanchaDetailsPage() {
                   {reserving
                     ? "Procesando..."
                     : user
-                    ? "Confirmar reserva"
-                    : "Inicia sesión para reservar"}
+                      ? "Confirmar reserva"
+                      : "Inicia sesión para reservar"}
                 </Button>
 
                 {!user && (

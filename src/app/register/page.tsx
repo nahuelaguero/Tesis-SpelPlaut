@@ -351,14 +351,14 @@ export default function RegisterPage() {
         <div className="text-center text-sm text-gray-700 font-medium">
           Al crear una cuenta, aceptas nuestros{" "}
           <Link
-            href="/terminos"
+            href="/terminos-condiciones"
             className="text-emerald-600 hover:text-emerald-500 font-semibold"
           >
-            Términos de Servicio
+            Términos y Condiciones
           </Link>{" "}
           y{" "}
           <Link
-            href="/privacidad"
+            href="/politica-privacidad"
             className="text-emerald-600 hover:text-emerald-500 font-semibold"
           >
             Política de Privacidad

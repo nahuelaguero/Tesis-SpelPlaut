@@ -8,9 +8,10 @@ import {
   CanchaCard,
   CanchaCardSkeleton,
 } from "@/components/canchas/CanchaCard";
+import { MapView } from "@/components/maps/MapView";
 import { useGeolocation } from "@/lib/geolocation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Filter, MapPin } from "lucide-react";
+import { Search, Filter, MapPin, Map, List } from "lucide-react";
 
 interface Cancha {
   _id: string;
@@ -35,7 +36,12 @@ export default function CanchasPage() {
   const [loadingCanchas, setLoadingCanchas] = useState(true);
   const [selectedTipo, setSelectedTipo] =
     useState<string>("Todos los Deportes");
-  const { location, getCurrentLocation } = useGeolocation();
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const {
+    location,
+    getCurrentLocation,
+    loading: locationLoading,
+  } = useGeolocation();
 
   // Obtener todas las canchas
   useEffect(() => {
@@ -201,11 +207,38 @@ export default function CanchasPage() {
             <Button
               onClick={getCurrentLocation}
               variant="outline"
+              disabled={locationLoading}
               className="flex items-center gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
             >
               <MapPin className="h-4 w-4" />
-              {location ? "Ubicación detectada" : "Mi ubicación"}
+              {locationLoading
+                ? "Obteniendo..."
+                : location
+                  ? "Ubicación detectada"
+                  : "Mi ubicación"}
             </Button>
+
+            {/* Toggle de vista */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <Button
+                onClick={() => setViewMode("list")}
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <List className="h-4 w-4" />
+                Lista
+              </Button>
+              <Button
+                onClick={() => setViewMode("map")}
+                variant={viewMode === "map" ? "default" : "ghost"}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Map className="h-4 w-4" />
+                Mapa
+              </Button>
+            </div>
           </div>
 
           {/* Mostrar ubicación detectada */}
@@ -261,7 +294,39 @@ export default function CanchasPage() {
                 Limpiar filtros
               </Button>
             </div>
+          ) : viewMode === "map" ? (
+            // Vista de Mapa
+            <div className="space-y-4">
+              <MapView
+                canchas={filteredCanchas.map((cancha) => {
+                  // Convertir formato para MapView
+                  const baseLatitude = -22.3667;
+                  const baseLongitude = -59.85;
+                  const randomOffset = () => (Math.random() - 0.5) * 0.02;
+
+                  return {
+                    _id: cancha._id,
+                    nombre: cancha.nombre,
+                    descripcion: cancha.nombre,
+                    tipo_cancha: cancha.tipo,
+                    ubicacion: cancha.ubicacion,
+                    precio_por_hora: cancha.precio_por_hora,
+                    coordenadas: {
+                      latitude: baseLatitude + randomOffset(),
+                      longitude: baseLongitude + randomOffset(),
+                    },
+                  };
+                })}
+                userLocation={location?.coordinates}
+                showUserLocation={!!location}
+                height="600px"
+                onCanchaClick={(cancha) => {
+                  window.open(`/canchas/${cancha._id}`, "_blank");
+                }}
+              />
+            </div>
           ) : (
+            // Vista de Lista
             <Suspense
               fallback={
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
