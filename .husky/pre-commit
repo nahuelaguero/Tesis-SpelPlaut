@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+if ! pnpm run pre-commit; then
+    echo "❌ Pre-commit checks failed! Please fix the issues before committing."
+    exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"

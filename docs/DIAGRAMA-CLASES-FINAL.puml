@@ -1,0 +1,389 @@
+@startuml Diagrama de Clases - Sistema SPELPLAUT
+
+!define ENTITY_COLOR #E8F5E9
+!define API_COLOR #E3F2FD
+!define TYPE_COLOR #F3E5F5
+!define ENUM_COLOR #FCE4EC
+!define MODEL_COLOR #FFF3E0
+
+' Configuración de layout
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+skinparam packageStyle rectangle
+
+title Diagrama de Clases UML - Sistema SPELPLAUT\nArquitectura: Next.js + TypeScript + MongoDB
+
+' ============================================
+' ENUMERACIONES (arriba a la izquierda)
+' ============================================
+
+package "Enumeraciones" #DDDDDD {
+  
+  enum RolUsuario <<enumeration>> ENUM_COLOR {
+    USUARIO
+    PROPIETARIO_CANCHA
+    ADMIN
+  }
+  
+  enum EstadoReserva <<enumeration>> ENUM_COLOR {
+    PENDIENTE
+    CONFIRMADA
+    CANCELADA
+    COMPLETADA
+  }
+  
+  enum TipoCancha <<enumeration>> ENUM_COLOR {
+    FUTBOL
+    FUTSAL
+    BASQUET
+    TENIS
+    PADEL
+    VOLEIBOL
+  }
+  
+  enum MetodoPago <<enumeration>> ENUM_COLOR {
+    EFECTIVO
+    TRANSFERENCIA
+    TARJETA
+  }
+  
+  enum EstadoPago <<enumeration>> ENUM_COLOR {
+    PAGADO
+    REEMBOLSADO
+  }
+  
+  enum TipoFeedback <<enumeration>> ENUM_COLOR {
+    SUGERENCIA
+    RECLAMO
+  }
+}
+
+' ============================================
+' ENTIDADES DE DOMINIO (centro)
+' ============================================
+
+package "Entidades de Dominio" #DDDDDD {
+
+  class Usuario <<entity>> ENTITY_COLOR {
+    - _id: ObjectId
+    - nombre_completo: String
+    - email: String
+    - telefono: String
+    - rol: RolUsuario
+    - contrasena_hash: String
+    - autenticacion_2FA: Boolean
+    - codigo_2fa_email?: String
+    - codigo_2fa_expira?: Date
+    - preferencias: Preferencias
+    - fecha_registro: Date
+    - reset_password_token?: String
+    - reset_password_expires?: Date
+    --
+    + esAdmin(): Boolean
+    + esPropietario(): Boolean
+    + requiere2FA(): Boolean
+    + validarToken2FA(codigo): Boolean
+    + generarCodigoRecuperacion(): String
+  }
+  
+  class Cancha <<entity>> ENTITY_COLOR {
+    - _id: ObjectId
+    - propietario_id: ObjectId
+    - nombre: String
+    - descripcion: String
+    - tipo_cancha: String
+    - ubicacion: String
+    - imagenes: String[]
+    - precio_por_hora: Number
+    - capacidad_jugadores: Number
+    - horario_apertura: String
+    - horario_cierre: String
+    - disponible: Boolean
+    - dias_operativos: String[]
+    - disponibilidad?: DisponibilidadInfo[]
+    --
+    + calcularPrecioReserva(horas): Number
+    + estaDisponibleEnFecha(fecha): Boolean
+    + validarHorario(hora): Boolean
+    + tieneHorarioOperativo(dia): Boolean
+  }
+  
+  class Reserva <<entity>> ENTITY_COLOR {
+    - _id: ObjectId
+    - usuario_id: ObjectId
+    - cancha_id: ObjectId
+    - fecha: String
+    - hora_inicio: String
+    - hora_fin: String
+    - duracion_horas: Number
+    - precio_total: Number
+    - estado: EstadoReserva
+    - fecha_reserva: Date
+    - createdAt?: Date
+    - updatedAt?: Date
+    --
+    + confirmar(): void
+    + cancelar(): void
+    + completar(): void
+    + esCancelable(): Boolean
+    + calcularDuracion(): Number
+  }
+  
+  class Pago <<entity>> ENTITY_COLOR {
+    - _id: ObjectId
+    - reserva_id: ObjectId
+    - usuario_id: ObjectId
+    - monto: Number
+    - metodo_pago: MetodoPago
+    - estado: EstadoPago
+    - fecha_pago: Date
+    --
+    + procesarPago(): Boolean
+    + reembolsar(): Boolean
+    + validarMonto(): Boolean
+  }
+  
+  class Feedback <<entity>> ENTITY_COLOR {
+    - _id: ObjectId
+    - usuario_id: ObjectId
+    - tipo: TipoFeedback
+    - mensaje: String
+    - fecha_envio: Date
+    - resuelto: Boolean
+    --
+    + marcarResuelto(): void
+    + esReclamo(): Boolean
+    + esSugerencia(): Boolean
+  }
+  
+  class Preferencias <<value object>> {
+    - tema?: String
+    - notificaciones?: Boolean
+  }
+  
+  class DisponibilidadInfo <<value object>> {
+    - fecha: String
+    - disponible: Boolean
+    - motivo?: String
+  }
+
+}
+
+' ============================================
+' TIPOS Y DTOs (arriba a la derecha)
+' ============================================
+
+package "DTOs y Tipos" #DDDDDD {
+
+  class RegisterData <<DTO>> TYPE_COLOR {
+    + nombre_completo: String
+    + email: String
+    + telefono: String
+    + password: String
+    + rol?: RolUsuario
+    --
+    + validar(): Boolean
+  }
+  
+  class LoginCredentials <<DTO>> TYPE_COLOR {
+    + email: String
+    + password: String
+    --
+    + validar(): Boolean
+  }
+  
+  class ApiResponse <<DTO>> TYPE_COLOR {
+    + success: Boolean
+    + message: String
+    + data: T
+    + error: String
+    + twoFARequired: Boolean
+    --
+    + {static} exito(datos): ApiResponse
+    + {static} error(msg): ApiResponse
+  }
+  
+  class PropietarioDashboard <<DTO>> TYPE_COLOR {
+    + canchas: Cancha[]
+    + estadisticas_consolidadas: Object
+    + reservas_recientes: Reserva[]
+    --
+    + calcularOcupacion(): Number
+  }
+
+}
+
+' ============================================
+' CAPA DE API (Next.js App Router)
+' ============================================
+
+package "API Routes (Next.js)" #DDDDDD {
+
+  class AuthAPI <<API>> API_COLOR {
+    --
+    + POST /api/auth/login
+    + POST /api/auth/register
+    + POST /api/auth/verify-2fa
+    + GET /api/auth/me
+    + GET /api/auth/profile
+    --
+    - hashPassword()
+    - generarToken()
+  }
+  
+  class ReservaAPI <<API>> API_COLOR {
+    --
+    + GET /api/reservas
+    + POST /api/reservas
+    + PUT /api/reservas/[id]
+    + GET /api/reservas/mis-reservas
+    --
+    - validarDisponibilidad()
+    - calcularPrecio()
+  }
+  
+  class CanchaAPI <<API>> API_COLOR {
+    --
+    + GET /api/canchas
+    + POST /api/canchas
+    + PUT /api/canchas/[id]
+    + GET /api/canchas/[id]/disponibilidad
+    --
+    - validarPropietario()
+  }
+  
+  class PagoAPI <<API>> API_COLOR {
+    --
+    + POST /api/pagos
+    + GET /api/pagos/historial
+    --
+    - procesarPago()
+  }
+  
+  class FeedbackAPI <<API>> API_COLOR {
+    --
+    + POST /api/feedback
+    + GET /api/feedback
+  }
+
+}
+
+' ============================================
+' MONGOOSE MODELS (abajo)
+' ============================================
+
+package "Mongoose ODM" #DDDDDD {
+
+  class UsuarioModel <<Mongoose>> MODEL_COLOR {
+    + findById(id)
+    + findOne(query)
+    + create(data)
+    + updateOne(query, data)
+  }
+  
+  class CanchaModel <<Mongoose>> MODEL_COLOR {
+    + findById(id)
+    + find(query)
+    + create(data)
+    + updateOne(query, data)
+  }
+  
+  class ReservaModel <<Mongoose>> MODEL_COLOR {
+    + findById(id)
+    + find(query)
+    + create(data)
+    + populate(field)
+  }
+
+}
+
+' ============================================
+' RELACIONES ENTRE ENTIDADES (Capa de Dominio)
+' ============================================
+
+Usuario *-- Preferencias
+Cancha *-- DisponibilidadInfo
+
+Usuario "1" -- "0..*" Reserva
+Usuario "1" -- "0..*" Cancha
+Usuario "1" -- "0..*" Pago
+Usuario "1" -- "0..*" Feedback
+
+Cancha "1" -- "0..*" Reserva
+
+Reserva "1" -- "0..1" Pago
+
+' ============================================
+' DEPENDENCIAS CON ENUMS
+' ============================================
+
+Usuario ..> RolUsuario
+Reserva ..> EstadoReserva
+Cancha ..> TipoCancha
+Pago ..> MetodoPago
+Pago ..> EstadoPago
+Feedback ..> TipoFeedback
+
+' ============================================
+' RELACIONES API → ENTITIES
+' ============================================
+
+AuthAPI ..> Usuario
+AuthAPI ..> RegisterData
+AuthAPI ..> LoginCredentials
+AuthAPI ..> ApiResponse
+
+ReservaAPI ..> Reserva
+ReservaAPI ..> ApiResponse
+
+CanchaAPI ..> Cancha
+CanchaAPI ..> ApiResponse
+
+PagoAPI ..> Pago
+PagoAPI ..> ApiResponse
+
+FeedbackAPI ..> Feedback
+FeedbackAPI ..> ApiResponse
+
+' ============================================
+' RELACIONES API → MONGOOSE
+' ============================================
+
+AuthAPI ..> UsuarioModel
+ReservaAPI ..> ReservaModel
+ReservaAPI ..> CanchaModel
+CanchaAPI ..> CanchaModel
+
+' ============================================
+' RELACIONES MONGOOSE → ENTITIES
+' ============================================
+
+UsuarioModel ..> Usuario : mapea
+CanchaModel ..> Cancha : mapea
+ReservaModel ..> Reserva : mapea
+
+' ============================================
+' NOTAS CLAVE
+' ============================================
+
+note top of "Entidades de Dominio"
+  **Capa de Dominio**
+  Objetos de negocio del sistema
+  con sus atributos y métodos.
+end note
+
+note top of "API Routes (Next.js)"
+  **Capa de Aplicación**
+  Next.js App Router - Route Handlers
+  Manejan lógica de negocio y HTTP.
+end note
+
+note top of "Mongoose ODM"
+  **Capa de Persistencia**
+  Mongoose Models con schemas,
+  validación e índices optimizados.
+end note
+
+@enduml
+
