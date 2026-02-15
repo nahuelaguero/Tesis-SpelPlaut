@@ -24,6 +24,13 @@ const users = [
     password: "user123",
     rol: "usuario",
   },
+  {
+    nombre_completo: "Leander Krahn",
+    email: "leander.krahn@lomaplata.com",
+    telefono: "+595981234567",
+    password: "propietario123",
+    rol: "propietario_cancha",
+  },
 ];
 
 const canchas = [
@@ -109,6 +116,20 @@ const canchas = [
     disponible: true,
     propietario_id: null,
   },
+  {
+    nombre: "Kranhfield",
+    descripcion:
+      "Cancha de Fútbol 5 con pasto sintético de alta calidad. Propiedad de Leander Krahn. Iluminación nocturna LED y estacionamiento.",
+    tipo_cancha: "Football5",
+    ubicacion: "Krahnfield, Loma Plata, Boquerón, Paraguay",
+    imagenes: ["/api/placeholder/600/400"],
+    capacidad_jugadores: 10,
+    precio_por_hora: 100000,
+    horario_apertura: "07:00",
+    horario_cierre: "22:00",
+    disponible: true,
+    propietario_id: null, // Se asignará a Leander Krahn
+  },
 ];
 
 async function seedDatabase() {
@@ -142,14 +163,20 @@ async function seedDatabase() {
     const userResult = await db.collection("users").insertMany(hashedUsers);
     console.log(`👥 ${userResult.insertedCount} usuarios creados`);
 
-    // Obtener el ID del admin para asignarlo como propietario
+    // Obtener IDs de propietarios
     const adminUser = await db.collection("users").findOne({ rol: "admin" });
     const adminId = adminUser?._id;
 
-    // Crear canchas con propietario_id del admin
+    const leanderUser = await db
+      .collection("users")
+      .findOne({ email: "leander.krahn@lomaplata.com" });
+    const leanderId = leanderUser?._id;
+
+    // Crear canchas con propietario_id correspondiente
     const canchasWithDates = canchas.map((cancha) => ({
       ...cancha,
-      propietario_id: adminId,
+      propietario_id:
+        cancha.nombre === "Kranhfield" ? leanderId : adminId,
       fechaCreacion: new Date(),
       fechaActualizacion: new Date(),
     }));
@@ -164,6 +191,9 @@ async function seedDatabase() {
     console.log("   Admin: admin@lomaplata.com / admin123");
     console.log("   Usuario 1: juan.perez@lomaplata.com / user123");
     console.log("   Usuario 2: maria.lopez@lomaplata.com / user123");
+    console.log(
+      "   Propietario: leander.krahn@lomaplata.com / propietario123"
+    );
   } catch (error) {
     console.error("❌ Error al hacer seed:", error);
   } finally {
