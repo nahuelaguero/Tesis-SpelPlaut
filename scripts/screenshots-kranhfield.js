@@ -33,9 +33,10 @@ async function takeScreenshots() {
   console.log(`Directorio: ${SCREENSHOTS_DIR}\n`);
 
   const browser = await puppeteer.launch({
-    headless: "new",
+    headless: true,
     defaultViewport: { width: 1280, height: 800 },
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    protocolTimeout: 120000,
   });
 
   const page = await browser.newPage();
@@ -43,7 +44,7 @@ async function takeScreenshots() {
   try {
     // 1. Screenshot de la pagina de login
     console.log("1/7 - Navegando al login...");
-    await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle2" });
+    await page.goto(`${BASE_URL}/login`, { waitUntil: "load", timeout: 120000 });
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "01-login-page.png"),
       fullPage: true,
@@ -61,7 +62,7 @@ async function takeScreenshots() {
     console.log("   Screenshot: 02-login-filled.png");
 
     await page.click('button[type="submit"]');
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 15000 });
+    await page.waitForNavigation({ waitUntil: "load", timeout: 120000 });
     console.log("   Login exitoso");
 
     // 3. Navegar al panel de administracion de canchas
@@ -144,7 +145,7 @@ async function takeScreenshots() {
 
     // 7. Ver Kranhfield en el listado publico
     console.log("7/7 - Navegando al listado publico de canchas...");
-    await page.goto(`${BASE_URL}/canchas`, { waitUntil: "networkidle2" });
+    await page.goto(`${BASE_URL}/canchas`, { waitUntil: "load", timeout: 120000 });
     await new Promise((r) => setTimeout(r, 2000)); // Esperar carga de datos
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "07-canchas-public-list.png"),
