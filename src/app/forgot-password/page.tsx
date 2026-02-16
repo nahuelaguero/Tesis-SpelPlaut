@@ -69,14 +69,14 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <div className="flex items-center mb-4">
               <Link
                 href="/login"
-                className="flex items-center text-emerald-600 hover:text-emerald-700 transition-colors"
+                className="flex items-center text-sky-600 hover:text-sky-700 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Volver al login
@@ -94,9 +94,9 @@ export default function ForgotPasswordPage() {
           <CardContent>
             {success ? (
               <div className="space-y-4">
-                <div className="flex items-center space-x-2 bg-emerald-50 rounded-lg p-4">
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <p className="text-sm text-emerald-700">{message}</p>
+                <div className="flex items-center space-x-2 bg-sky-50 rounded-lg p-4">
+                  <CheckCircle className="h-5 w-5 text-sky-600" />
+                  <p className="text-sm text-sky-700">{message}</p>
                 </div>
                 <div className="text-center space-y-2">
                   <p className="text-sm text-gray-600">
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
                   </Button>
                   <Button
                     onClick={() => router.push("/login")}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    className="flex-1 bg-sky-600 hover:bg-sky-700"
                   >
                     Ir al login
                   </Button>
@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full h-11 bg-sky-600 hover:bg-sky-700"
                 >
                   {loading ? (
                     <>
@@ -166,7 +166,7 @@ export default function ForgotPasswordPage() {
                 <div className="text-center">
                   <Link
                     href="/login"
-                    className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+                    className="text-sm text-sky-600 hover:text-sky-700 transition-colors"
                   >
                     ¿Recordaste tu contraseña? Inicia sesión
                   </Link>
@@ -181,7 +181,7 @@ export default function ForgotPasswordPage() {
             ¿Necesitas ayuda?{" "}
             <Link
               href="/contacto"
-              className="text-emerald-600 hover:text-emerald-700"
+              className="text-sky-600 hover:text-sky-700"
             >
               Contáctanos
             </Link>

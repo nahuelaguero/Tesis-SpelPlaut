@@ -220,7 +220,7 @@ export default function LoginPage() {
         {/* Logo y título */}
         <div className="text-center">
           <div className="flex justify-center">
-            <Calendar className="h-12 w-12 text-emerald-600" />
+            <Calendar className="h-12 w-12 text-sky-600" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Iniciar Sesión
@@ -236,7 +236,7 @@ export default function LoginPage() {
             <CardTitle className="text-gray-900 font-bold flex items-center gap-2">
               {requires2FA ? (
                 <>
-                  <Shield className="h-5 w-5 text-emerald-600" />
+                  <Shield className="h-5 w-5 text-sky-600" />
                   Verificación 2FA
                 </>
               ) : (
@@ -279,7 +279,7 @@ export default function LoginPage() {
                     <Label htmlFor="password">Contraseña</Label>
                     <Link
                       href="/forgot-password"
-                      className="text-sm text-emerald-600 hover:text-emerald-500"
+                      className="text-sm text-sky-600 hover:text-sky-500"
                     >
                       ¿Olvidaste tu contraseña?
                     </Link>
@@ -425,7 +425,7 @@ export default function LoginPage() {
             ¿No tienes una cuenta?{" "}
             <Link
               href="/register"
-              className="font-medium text-emerald-600 hover:text-emerald-500"
+              className="font-medium text-sky-600 hover:text-sky-500"
             >
               Regístrate aquí
             </Link>
@@ -434,7 +434,7 @@ export default function LoginPage() {
             ¿Problemas para acceder?{" "}
             <Link
               href="/forgot-password"
-              className="font-medium text-emerald-600 hover:text-emerald-500"
+              className="font-medium text-sky-600 hover:text-sky-500"
             >
               Recuperar contraseña
             </Link>

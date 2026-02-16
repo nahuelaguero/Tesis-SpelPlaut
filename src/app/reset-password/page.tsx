@@ -123,11 +123,11 @@ function ResetPasswordForm() {
 
   if (validating) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-8">
             <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-emerald-600" />
+              <Loader2 className="h-12 w-12 animate-spin mx-auto text-sky-600" />
               <p className="mt-4 text-gray-700">Validando enlace...</p>
             </div>
           </CardContent>
@@ -138,7 +138,7 @@ function ResetPasswordForm() {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Card className="shadow-lg">
             <CardHeader className="space-y-1">
@@ -166,7 +166,7 @@ function ResetPasswordForm() {
                   </Button>
                   <Button
                     onClick={() => router.push("/login")}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    className="flex-1 bg-sky-600 hover:bg-sky-700"
                   >
                     Ir al login
                   </Button>
@@ -180,14 +180,14 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <div className="flex items-center mb-4">
               <Link
                 href="/login"
-                className="flex items-center text-emerald-600 hover:text-emerald-700 transition-colors"
+                className="flex items-center text-sky-600 hover:text-sky-700 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Volver al login
@@ -205,13 +205,13 @@ function ResetPasswordForm() {
           <CardContent>
             {success ? (
               <div className="space-y-4">
-                <div className="flex items-center space-x-2 bg-emerald-50 rounded-lg p-4">
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <p className="text-sm text-emerald-700">{message}</p>
+                <div className="flex items-center space-x-2 bg-sky-50 rounded-lg p-4">
+                  <CheckCircle className="h-5 w-5 text-sky-600" />
+                  <p className="text-sm text-sky-700">{message}</p>
                 </div>
                 <Button
                   onClick={() => router.push("/login")}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full bg-sky-600 hover:bg-sky-700"
                 >
                   Ir al login
                 </Button>
@@ -283,7 +283,7 @@ function ResetPasswordForm() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full bg-sky-600 hover:bg-sky-700"
                   disabled={loading}
                 >
                   {loading ? (
@@ -308,11 +308,11 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center p-4">
           <Card className="w-full max-w-md shadow-lg">
             <CardContent className="p-8">
               <div className="text-center">
-                <Loader2 className="h-12 w-12 animate-spin mx-auto text-emerald-600" />
+                <Loader2 className="h-12 w-12 animate-spin mx-auto text-sky-600" />
                 <p className="mt-4 text-gray-700">Cargando...</p>
               </div>
             </CardContent>

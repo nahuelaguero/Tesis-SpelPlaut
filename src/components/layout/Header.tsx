@@ -29,7 +29,7 @@ export default function Header() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-2">
-                <div className="bg-emerald-600 text-white p-2 rounded-lg">
+                <div className="bg-blue-700 text-white p-2 rounded-lg">
                   <span className="font-bold text-sm">SP</span>
                 </div>
                 <div className="flex flex-col">
@@ -56,7 +56,7 @@ export default function Header() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="bg-emerald-600 text-white p-2 rounded-lg">
+              <div className="bg-blue-700 text-white p-2 rounded-lg">
                 <span className="font-bold text-sm">SP</span>
               </div>
               <div className="flex flex-col">
@@ -76,7 +76,7 @@ export default function Header() {
             {(!user || user.rol === "usuario" || user.rol === "admin") && (
               <Link
                 href="/canchas"
-                className="text-gray-700 hover:text-emerald-600 transition-colors"
+                className="text-gray-700 hover:text-sky-700 transition-colors"
               >
                 Canchas
               </Link>
@@ -88,7 +88,7 @@ export default function Header() {
                 {(user.rol === "usuario" || user.rol === "admin") && (
                   <Link
                     href="/mis-reservas"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                    className="text-gray-700 hover:text-sky-700 transition-colors"
                   >
                     {user.rol === "admin"
                       ? "Todas las Reservas"
@@ -100,7 +100,7 @@ export default function Header() {
                 {user.rol === "propietario_cancha" && (
                   <Link
                     href="/mi-cancha"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                    className="text-gray-700 hover:text-sky-700 transition-colors"
                   >
                     Mi Cancha
                   </Link>
@@ -110,7 +110,7 @@ export default function Header() {
                 {user.rol === "admin" && (
                   <Link
                     href="/admin"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                    className="text-gray-700 hover:text-sky-700 transition-colors"
                   >
                     Administración
                   </Link>
@@ -125,7 +125,7 @@ export default function Header() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/perfil"
-                  className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                  className="flex items-center space-x-2 text-gray-700 hover:text-sky-700 transition-colors"
                 >
                   <User className="h-5 w-5" />
                   <span className="font-medium">{user.nombre_completo}</span>
@@ -148,7 +148,12 @@ export default function Header() {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="sm">Registrarse</Button>
+                  <Button
+                    size="sm"
+                    className="bg-blue-700 hover:bg-blue-800 text-white"
+                  >
+                    Registrarse
+                  </Button>
                 </Link>
               </div>
             )}
@@ -179,7 +184,7 @@ export default function Header() {
               {(!user || user.rol === "usuario" || user.rol === "admin") && (
                 <Link
                   href="/canchas"
-                  className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                  className="block px-3 py-2 text-gray-700 hover:text-sky-700 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Canchas
@@ -192,7 +197,7 @@ export default function Header() {
                   {(user.rol === "usuario" || user.rol === "admin") && (
                     <Link
                       href="/mis-reservas"
-                      className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                      className="block px-3 py-2 text-gray-700 hover:text-sky-700 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {user.rol === "admin"
@@ -205,7 +210,7 @@ export default function Header() {
                   {user.rol === "propietario_cancha" && (
                     <Link
                       href="/mi-cancha"
-                      className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                      className="block px-3 py-2 text-gray-700 hover:text-sky-700 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Mi Cancha
@@ -216,7 +221,7 @@ export default function Header() {
                   {user.rol === "admin" && (
                     <Link
                       href="/admin"
-                      className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                      className="block px-3 py-2 text-gray-700 hover:text-sky-700 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Administración
@@ -229,7 +234,7 @@ export default function Header() {
                   <div className="px-3 py-2 space-y-2">
                     <Link
                       href="/perfil"
-                      className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-sky-700 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <User className="h-5 w-5" />
@@ -253,7 +258,10 @@ export default function Header() {
                       </Button>
                     </Link>
                     <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                      <Button size="sm" className="w-full">
+                      <Button
+                        size="sm"
+                        className="w-full bg-blue-700 hover:bg-blue-800 text-white"
+                      >
                         Registrarse
                       </Button>
                     </Link>

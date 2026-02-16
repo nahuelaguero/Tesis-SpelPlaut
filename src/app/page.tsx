@@ -29,15 +29,15 @@ export default function HomePage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-emerald-600 to-emerald-800 text-white">
+      <section className="relative bg-gradient-to-br from-sky-700 to-blue-900 text-white">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
           <div className="text-center">
             <h1 className="text-4xl sm:text-6xl font-bold tracking-tight">
               Reserva tu cancha en
-              <span className="block text-emerald-200">Loma Plata</span>
+              <span className="block text-sky-200">Loma Plata</span>
             </h1>
-            <p className="mt-6 text-xl sm:text-2xl text-emerald-100 max-w-3xl mx-auto">
+            <p className="mt-6 text-xl sm:text-2xl text-sky-100 max-w-3xl mx-auto">
               La plataforma más fácil y rápida para reservar canchas deportivas
               en Loma Plata. Encuentra, reserva y juega en tu ciudad favorita.
             </p>
@@ -45,7 +45,7 @@ export default function HomePage() {
               <Link href="/canchas">
                 <Button
                   size="lg"
-                  className="bg-white text-emerald-600 hover:bg-gray-100 px-8 py-4 text-lg"
+                  className="bg-white text-sky-700 hover:bg-gray-100 px-8 py-4 text-lg"
                 >
                   Ver Canchas Disponibles
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -55,7 +55,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-emerald-600 px-8 py-4 text-lg"
+                  className="border-white text-white hover:bg-white hover:text-sky-700 px-8 py-4 text-lg"
                 >
                   Crear Cuenta Gratis
                 </Button>
@@ -95,8 +95,8 @@ export default function HomePage() {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-center">
-                  <div className="bg-emerald-100 p-3 rounded-full">
-                    <Clock className="h-8 w-8 text-emerald-600" />
+                  <div className="bg-sky-100 p-3 rounded-full">
+                    <Clock className="h-8 w-8 text-sky-700" />
                   </div>
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900">
@@ -115,8 +115,8 @@ export default function HomePage() {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-center">
-                  <div className="bg-emerald-100 p-3 rounded-full">
-                    <MapPin className="h-8 w-8 text-emerald-600" />
+                  <div className="bg-sky-100 p-3 rounded-full">
+                    <MapPin className="h-8 w-8 text-sky-700" />
                   </div>
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900">
@@ -135,8 +135,8 @@ export default function HomePage() {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-center">
-                  <div className="bg-emerald-100 p-3 rounded-full">
-                    <Shield className="h-8 w-8 text-emerald-600" />
+                  <div className="bg-sky-100 p-3 rounded-full">
+                    <Shield className="h-8 w-8 text-sky-700" />
                   </div>
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900">
@@ -155,8 +155,8 @@ export default function HomePage() {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-center">
-                  <div className="bg-emerald-100 p-3 rounded-full">
-                    <Smartphone className="h-8 w-8 text-emerald-600" />
+                  <div className="bg-sky-100 p-3 rounded-full">
+                    <Smartphone className="h-8 w-8 text-sky-700" />
                   </div>
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900">
@@ -175,8 +175,8 @@ export default function HomePage() {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-center">
-                  <div className="bg-emerald-100 p-3 rounded-full">
-                    <Users className="h-8 w-8 text-emerald-600" />
+                  <div className="bg-sky-100 p-3 rounded-full">
+                    <Users className="h-8 w-8 text-sky-700" />
                   </div>
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900">
@@ -195,8 +195,8 @@ export default function HomePage() {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex justify-center">
-                  <div className="bg-emerald-100 p-3 rounded-full">
-                    <Calendar className="h-8 w-8 text-emerald-600" />
+                  <div className="bg-sky-100 p-3 rounded-full">
+                    <Calendar className="h-8 w-8 text-sky-700" />
                   </div>
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900">
@@ -229,7 +229,7 @@ export default function HomePage() {
           <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="flex justify-center">
-                <div className="bg-emerald-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
+                <div className="bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
                   1
                 </div>
               </div>
@@ -244,7 +244,7 @@ export default function HomePage() {
 
             <div className="text-center">
               <div className="flex justify-center">
-                <div className="bg-emerald-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
+                <div className="bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
                   2
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function HomePage() {
 
             <div className="text-center">
               <div className="flex justify-center">
-                <div className="bg-emerald-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
+                <div className="bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
                   3
                 </div>
               </div>
@@ -301,8 +301,8 @@ export default function HomePage() {
                   recomiendo!&rdquo;
                 </p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <span className="text-emerald-600 font-semibold">JG</span>
+                  <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                    <span className="text-sky-700 font-semibold">JG</span>
                   </div>
                   <div className="ml-3">
                     <p className="font-semibold text-gray-900">Juan González</p>
@@ -329,8 +329,8 @@ export default function HomePage() {
                   facilitado mucho la gestión de reservas y pagos.&rdquo;
                 </p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <span className="text-emerald-600 font-semibold">MS</span>
+                  <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                    <span className="text-sky-700 font-semibold">MS</span>
                   </div>
                   <div className="ml-3">
                     <p className="font-semibold text-gray-900">María Silva</p>
@@ -357,8 +357,8 @@ export default function HomePage() {
                   a no olvidar mis partidos. ¡Excelente servicio!&rdquo;
                 </p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <span className="text-emerald-600 font-semibold">PR</span>
+                  <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                    <span className="text-sky-700 font-semibold">PR</span>
                   </div>
                   <div className="ml-3">
                     <p className="font-semibold text-gray-900">
@@ -376,12 +376,12 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-emerald-600">
+      <section className="py-24 bg-blue-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">
             ¿Listo para reservar tu próxima cancha?
           </h2>
-          <p className="mt-4 text-xl text-emerald-100 max-w-2xl mx-auto">
+          <p className="mt-4 text-xl text-sky-100 max-w-2xl mx-auto">
             Únete a miles de usuarios que ya disfrutan de la forma más fácil de
             reservar canchas deportivas.
           </p>
@@ -389,7 +389,7 @@ export default function HomePage() {
             <Link href="/register">
               <Button
                 size="lg"
-                className="bg-white text-emerald-600 hover:bg-gray-100 px-8 py-4 text-lg"
+                className="bg-white text-sky-700 hover:bg-gray-100 px-8 py-4 text-lg"
               >
                 Crear Cuenta Gratis
                 <CheckCircle className="ml-2 h-5 w-5" />
@@ -399,7 +399,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-emerald-600 px-8 py-4 text-lg"
+                className="border-white text-white hover:bg-white hover:text-sky-700 px-8 py-4 text-lg"
               >
                 Explorar Canchas
               </Button>
@@ -411,13 +411,13 @@ export default function HomePage() {
       {/* Sección SpelPlaut */}
       <section className="py-24 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl p-8 sm:p-12">
+          <div className="bg-gradient-to-r from-sky-50 to-blue-100 rounded-xl p-8 sm:p-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
               ¿Qué significa SpelPlaut?
             </h2>
             <div className="space-y-6 text-lg text-gray-700">
               <p>
-                <span className="font-semibold text-emerald-600">
+                <span className="font-semibold text-sky-700">
                   SpelPlaut
                 </span>{" "}
                 combina dos palabras que representan la esencia de nuestra
@@ -425,7 +425,7 @@ export default function HomePage() {
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <h3 className="text-2xl font-bold text-emerald-600 mb-2">
+                  <h3 className="text-2xl font-bold text-sky-700 mb-2">
                     Spel
                   </h3>
                   <p className="text-gray-700 font-medium">
@@ -434,7 +434,7 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <h3 className="text-2xl font-bold text-emerald-600 mb-2">
+                  <h3 className="text-2xl font-bold text-sky-700 mb-2">
                     Plaut
                   </h3>
                   <p className="text-gray-700 font-medium">

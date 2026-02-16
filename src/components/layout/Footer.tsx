@@ -13,7 +13,7 @@ export default function Footer() {
           {/* Información de la empresa */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">SP</span>
               </div>
               <h3 className="text-xl font-bold">SpelPlaut</h3>
@@ -25,13 +25,13 @@ export default function Footer() {
             <div className="flex space-x-4">
               <a
                 href="mailto:soporte@spelplaut.com"
-                className="text-gray-400 hover:text-emerald-400 transition-colors"
+                className="text-gray-400 hover:text-sky-400 transition-colors"
               >
                 <Mail className="h-5 w-5" />
               </a>
               <a
                 href="tel:+595492252000"
-                className="text-gray-400 hover:text-emerald-400 transition-colors"
+                className="text-gray-400 hover:text-sky-400 transition-colors"
               >
                 <Phone className="h-5 w-5" />
               </a>
@@ -44,25 +44,25 @@ export default function Footer() {
             <nav className="space-y-2">
               <Link
                 href="/canchas"
-                className="block text-gray-400 hover:text-emerald-400 transition-colors text-sm"
+                className="block text-gray-400 hover:text-sky-400 transition-colors text-sm"
               >
                 Ver Canchas
               </Link>
               <Link
                 href="/mis-reservas"
-                className="block text-gray-400 hover:text-emerald-400 transition-colors text-sm"
+                className="block text-gray-400 hover:text-sky-400 transition-colors text-sm"
               >
                 Mis Reservas
               </Link>
               <Link
                 href="/perfil"
-                className="block text-gray-400 hover:text-emerald-400 transition-colors text-sm"
+                className="block text-gray-400 hover:text-sky-400 transition-colors text-sm"
               >
                 Mi Perfil
               </Link>
               <Link
                 href="/dashboard"
-                className="block text-gray-400 hover:text-emerald-400 transition-colors text-sm"
+                className="block text-gray-400 hover:text-sky-400 transition-colors text-sm"
               >
                 Dashboard
               </Link>
@@ -75,14 +75,14 @@ export default function Footer() {
             <nav className="space-y-2">
               <Link
                 href="/terminos-condiciones"
-                className="flex items-center space-x-2 text-gray-400 hover:text-emerald-400 transition-colors text-sm"
+                className="flex items-center space-x-2 text-gray-400 hover:text-sky-400 transition-colors text-sm"
               >
                 <FileText className="h-4 w-4" />
                 <span>Términos y Condiciones</span>
               </Link>
               <Link
                 href="/politica-privacidad"
-                className="flex items-center space-x-2 text-gray-400 hover:text-emerald-400 transition-colors text-sm"
+                className="flex items-center space-x-2 text-gray-400 hover:text-sky-400 transition-colors text-sm"
               >
                 <Shield className="h-4 w-4" />
                 <span>Política de Privacidad</span>

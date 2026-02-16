@@ -48,7 +48,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
           <p className="mt-2 text-gray-700 font-medium">
             Verificando sesión...
           </p>
@@ -146,7 +146,7 @@ export default function RegisterPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
-                <CheckCircle className="h-16 w-16 text-emerald-600 mx-auto" />
+                <CheckCircle className="h-16 w-16 text-sky-600 mx-auto" />
                 <h2 className="text-2xl font-bold text-gray-900">
                   ¡Cuenta creada exitosamente!
                 </h2>
@@ -171,7 +171,7 @@ export default function RegisterPage() {
         {/* Logo y título */}
         <div className="text-center">
           <div className="flex justify-center">
-            <Calendar className="h-12 w-12 text-emerald-600" />
+            <Calendar className="h-12 w-12 text-sky-600" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Crear Cuenta
@@ -352,14 +352,14 @@ export default function RegisterPage() {
           Al crear una cuenta, aceptas nuestros{" "}
           <Link
             href="/terminos-condiciones"
-            className="text-emerald-600 hover:text-emerald-500 font-semibold"
+            className="text-sky-600 hover:text-sky-500 font-semibold"
           >
             Términos y Condiciones
           </Link>{" "}
           y{" "}
           <Link
             href="/politica-privacidad"
-            className="text-emerald-600 hover:text-emerald-500 font-semibold"
+            className="text-sky-600 hover:text-sky-500 font-semibold"
           >
             Política de Privacidad
           </Link>
