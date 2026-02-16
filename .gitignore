@@ -88,6 +88,7 @@ public/workbox-*.js
 # Temporary test files
 test-results/
 coverage/
+scripts/stress-tests/results/
 
 # Package lock files (keeping pnpm-lock.yaml only)
 package-lock.json
@@ -101,6 +102,19 @@ yarn.lock
 
 # Docs images (screenshots, diagrams, etc.)
 docs/images/
+
+# Docs temporales y binarios
+docs/CAMBIOS-PARA-COPIAR-PEGAR/
+docs/CAMBIOS-PARA-COPIAR-PEGAR.zip
+docs/ENTREGABLES-TESIS-DIAGRAMAS/
+docs/ENTREGABLES_TESIS/
+docs/Tesis*.docx
+docs/Tesis*.pdf
+docs/*-temp.txt
+docs/limpiar-duplicaciones.py
+docs/media/
+docs/puml/
+mockups-temp/
 
 # Cookies and sessions
 cookies.txt

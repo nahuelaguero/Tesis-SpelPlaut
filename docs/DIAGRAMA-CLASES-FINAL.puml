@@ -65,8 +65,15 @@ package "Enumeraciones" #DDDDDD {
 
 package "Entidades de Dominio" #DDDDDD {
 
+  abstract class EntidadBase <<abstract>> MODEL_COLOR {
+    # _id: ObjectId
+    # createdAt: Date
+    # updatedAt: Date
+    --
+    + getId(): ObjectId
+  }
+
   class Usuario <<entity>> ENTITY_COLOR {
-    - _id: ObjectId
     - nombre_completo: String
     - email: String
     - telefono: String
@@ -88,7 +95,6 @@ package "Entidades de Dominio" #DDDDDD {
   }
   
   class Cancha <<entity>> ENTITY_COLOR {
-    - _id: ObjectId
     - propietario_id: ObjectId
     - nombre: String
     - descripcion: String
@@ -110,7 +116,6 @@ package "Entidades de Dominio" #DDDDDD {
   }
   
   class Reserva <<entity>> ENTITY_COLOR {
-    - _id: ObjectId
     - usuario_id: ObjectId
     - cancha_id: ObjectId
     - fecha: String
@@ -120,8 +125,6 @@ package "Entidades de Dominio" #DDDDDD {
     - precio_total: Number
     - estado: EstadoReserva
     - fecha_reserva: Date
-    - createdAt?: Date
-    - updatedAt?: Date
     --
     + confirmar(): void
     + cancelar(): void
@@ -131,7 +134,6 @@ package "Entidades de Dominio" #DDDDDD {
   }
   
   class Pago <<entity>> ENTITY_COLOR {
-    - _id: ObjectId
     - reserva_id: ObjectId
     - usuario_id: ObjectId
     - monto: Number
@@ -145,7 +147,6 @@ package "Entidades de Dominio" #DDDDDD {
   }
   
   class Feedback <<entity>> ENTITY_COLOR {
-    - _id: ObjectId
     - usuario_id: ObjectId
     - tipo: TipoFeedback
     - mensaje: String
@@ -301,6 +302,13 @@ package "Mongoose ODM" #DDDDDD {
 ' ============================================
 ' RELACIONES ENTRE ENTIDADES (Capa de Dominio)
 ' ============================================
+
+' Herencia
+Usuario --|> EntidadBase
+Cancha --|> EntidadBase
+Reserva --|> EntidadBase
+Pago --|> EntidadBase
+Feedback --|> EntidadBase
 
 Usuario *-- Preferencias
 Cancha *-- DisponibilidadInfo

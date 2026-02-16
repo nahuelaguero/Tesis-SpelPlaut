@@ -54,7 +54,7 @@ OUTPUT_DIR="${DOCS_DIR}/images"
 mkdir -p "${OUTPUT_DIR}"
 
 # Archivo de entrada
-PLANTUML_FILE="${DOCS_DIR}/DIAGRAMA-CLASES-UML.puml"
+PLANTUML_FILE="${DOCS_DIR}/DIAGRAMA-CLASES-FINAL.puml"
 
 if [ ! -f "$PLANTUML_FILE" ]; then
     echo "❌ No se encontró el archivo: $PLANTUML_FILE"
