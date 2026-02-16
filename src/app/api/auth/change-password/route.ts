@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Buscar usuario con contraseña incluida
-    const user = await Usuario.findById(decoded.userId).select("+password");
+    const user = await Usuario.findById(decoded.userId).select("+contrasena_hash");
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest) {
     // Verificar contraseña actual
     const isCurrentPasswordValid = await bcrypt.compare(
       current_password,
-      user.password
+      user.contrasena_hash
     );
 
     if (!isCurrentPasswordValid) {
@@ -92,7 +92,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar que la nueva contraseña sea diferente
-    const isSamePassword = await bcrypt.compare(new_password, user.password);
+    const isSamePassword = await bcrypt.compare(new_password, user.contrasena_hash);
 
     if (isSamePassword) {
       return NextResponse.json<ApiResponse>(
@@ -110,7 +110,7 @@ export async function PUT(request: NextRequest) {
 
     // Actualizar contraseña
     await Usuario.findByIdAndUpdate(decoded.userId, {
-      password: hashedNewPassword,
+      contrasena_hash: hashedNewPassword,
       fecha_actualizacion: new Date(),
     });
 

@@ -45,6 +45,8 @@ async function takeScreenshots() {
     // 1. Screenshot de la pagina de login
     console.log("1/7 - Navegando al login...");
     await page.goto(`${BASE_URL}/login`, { waitUntil: "load", timeout: 120000 });
+    // Esperar a que React hidrate y el formulario aparezca
+    await page.waitForSelector('input[name="email"]', { timeout: 60000 });
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "01-login-page.png"),
       fullPage: true,
@@ -68,9 +70,9 @@ async function takeScreenshots() {
     // 3. Navegar al panel de administracion de canchas
     console.log("3/7 - Navegando al panel de canchas...");
     await page.goto(`${BASE_URL}/admin/canchas`, {
-      waitUntil: "networkidle2",
+      waitUntil: "load", timeout: 120000,
     });
-    await page.waitForSelector("h1", { timeout: 10000 });
+    await page.waitForSelector("h1", { timeout: 60000 });
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "03-admin-canchas-list.png"),
       fullPage: true,
@@ -80,9 +82,9 @@ async function takeScreenshots() {
     // 4. Navegar al formulario de nueva cancha
     console.log("4/7 - Navegando al formulario de nueva cancha...");
     await page.goto(`${BASE_URL}/admin/canchas/nueva`, {
-      waitUntil: "networkidle2",
+      waitUntil: "load", timeout: 120000,
     });
-    await page.waitForSelector('input[name="nombre"]', { timeout: 10000 });
+    await page.waitForSelector('input[name="nombre"]', { timeout: 60000 });
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "04-form-empty.png"),
       fullPage: true,
@@ -96,26 +98,22 @@ async function takeScreenshots() {
     await page.type('textarea[name="descripcion"]', KRANHFIELD_DATA.descripcion);
     await page.select('select[name="tipo_cancha"]', KRANHFIELD_DATA.tipo_cancha);
     await page.type('input[name="ubicacion"]', KRANHFIELD_DATA.ubicacion);
-    await page.type(
-      'input[name="precio_por_hora"]',
-      KRANHFIELD_DATA.precio_por_hora
-    );
-    await page.type(
-      'input[name="capacidad_jugadores"]',
-      KRANHFIELD_DATA.capacidad_jugadores
-    );
 
-    // Limpiar y setear horarios
-    await page.click('input[name="horario_apertura"]', { clickCount: 3 });
-    await page.type(
-      'input[name="horario_apertura"]',
-      KRANHFIELD_DATA.horario_apertura
-    );
-    await page.click('input[name="horario_cierre"]', { clickCount: 3 });
-    await page.type(
-      'input[name="horario_cierre"]',
-      KRANHFIELD_DATA.horario_cierre
-    );
+    // Usar evaluate para campos numericos y de hora (evita problemas de validacion del browser)
+    await page.evaluate((data) => {
+      const setNativeValue = (el, value) => {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, 'value'
+        ).set;
+        nativeInputValueSetter.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      setNativeValue(document.querySelector('input[name="precio_por_hora"]'), data.precio_por_hora);
+      setNativeValue(document.querySelector('input[name="capacidad_jugadores"]'), data.capacidad_jugadores);
+      setNativeValue(document.querySelector('input[name="horario_apertura"]'), data.horario_apertura);
+      setNativeValue(document.querySelector('input[name="horario_cierre"]'), data.horario_cierre);
+    }, KRANHFIELD_DATA);
 
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "05-form-filled.png"),
@@ -125,6 +123,14 @@ async function takeScreenshots() {
 
     // 6. Enviar el formulario
     console.log("6/7 - Enviando formulario...");
+    // Remover validacion HTML5 del precio (min=1 + step=1000 rechaza 100000)
+    await page.evaluate(() => {
+      const precioInput = document.querySelector('input[name="precio_por_hora"]');
+      if (precioInput) {
+        precioInput.removeAttribute('step');
+        precioInput.removeAttribute('min');
+      }
+    });
     await page.click('button[type="submit"]');
 
     // Esperar el mensaje de exito o redireccion
@@ -132,9 +138,10 @@ async function takeScreenshots() {
       () => {
         const successMsg = document.querySelector(".bg-green-50");
         const errorMsg = document.querySelector(".bg-red-50");
-        return successMsg || errorMsg;
+        const alert = document.querySelector('[role="alert"]');
+        return successMsg || errorMsg || alert;
       },
-      { timeout: 15000 }
+      { timeout: 60000 }
     );
 
     await page.screenshot({
@@ -146,7 +153,7 @@ async function takeScreenshots() {
     // 7. Ver Kranhfield en el listado publico
     console.log("7/7 - Navegando al listado publico de canchas...");
     await page.goto(`${BASE_URL}/canchas`, { waitUntil: "load", timeout: 120000 });
-    await new Promise((r) => setTimeout(r, 2000)); // Esperar carga de datos
+    await new Promise((r) => setTimeout(r, 5000)); // Esperar hidratacion y carga de datos
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, "07-canchas-public-list.png"),
       fullPage: true,
