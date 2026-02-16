@@ -4,12 +4,25 @@ import { sendReservationConfirmation } from "@/lib/email";
 // Endpoint para probar el sistema de email
 export async function POST(request: NextRequest) {
   try {
-    const { type = "test" } = await request.json();
+    const { type = "test", to } = await request.json();
+    const recipient =
+      typeof to === "string" && to.trim()
+        ? to.trim().toLowerCase()
+        : "nahuel.aguerosan@gmail.com";
+    const smtpConfigured = Boolean(
+      process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        (process.env.SMTP_PASSWORD || process.env.SMTP_PASS)
+    );
+    const gmailConfigured = Boolean(
+      process.env.EMAIL_USER &&
+        (process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS)
+    );
 
     const testData = {
       usuario: {
         nombre_completo: "Nahuel Aguero",
-        email: "nahuel.aguerosan@gmail.com",
+        email: recipient,
       },
       cancha: {
         descripcion: "Cancha de Fútbol 5 - Centro Deportivo",
@@ -55,9 +68,15 @@ export async function POST(request: NextRequest) {
                 <h3>Configuración Detectada:</h3>
                 <ul>
                   <li><strong>Modo:</strong> ${process.env.NODE_ENV}</li>
-                  <li><strong>Email Service:</strong> Gmail</li>
-                  <li><strong>Email User:</strong> ${process.env.EMAIL_USER}</li>
-                  <li><strong>SMTP Host:</strong> smtp.gmail.com</li>
+                  <li><strong>Proveedor primario:</strong> ${
+                    smtpConfigured ? "SMTP" : "Gmail"
+                  }</li>
+                  <li><strong>SMTP configurado:</strong> ${
+                    smtpConfigured ? "sí" : "no"
+                  }</li>
+                  <li><strong>Gmail configurado:</strong> ${
+                    gmailConfigured ? "sí" : "no"
+                  }</li>
                 </ul>
               </div>
               <p>Si ves este mensaje, el sistema de email está funcionando correctamente.</p>
@@ -73,9 +92,9 @@ Este es un email de prueba del sistema SpelPlaut.
 
 Configuración Detectada:
 - Modo: ${process.env.NODE_ENV}
-- Email Service: Gmail
-- Email User: ${process.env.EMAIL_USER}
-- SMTP Host: smtp.gmail.com
+- Proveedor primario: ${smtpConfigured ? "SMTP" : "Gmail"}
+- SMTP configurado: ${smtpConfigured ? "sí" : "no"}
+- Gmail configurado: ${gmailConfigured ? "sí" : "no"}
 
 Si ves este mensaje, el sistema de email está funcionando correctamente.
 
@@ -91,9 +110,9 @@ SpelPlaut - Sistema de Reservas de Canchas
         : "❌ Error enviando email",
       config: {
         mode: process.env.NODE_ENV,
-        service: "Gmail",
-        emailUser: process.env.EMAIL_USER,
-        smtpHost: "smtp.gmail.com",
+        primaryProvider: smtpConfigured ? "smtp" : "gmail",
+        smtpConfigured,
+        gmailConfigured,
       },
     });
   } catch (error) {
@@ -117,9 +136,21 @@ export async function GET() {
     availableTypes: ["test", "confirmacion"],
     config: {
       mode: process.env.NODE_ENV,
-      service: "Gmail",
-      emailUser: process.env.EMAIL_USER,
-      smtpHost: "smtp.gmail.com",
+      primaryProvider:
+        process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        (process.env.SMTP_PASSWORD || process.env.SMTP_PASS)
+          ? "smtp"
+          : "gmail",
+      smtpConfigured: Boolean(
+        process.env.SMTP_HOST &&
+          process.env.SMTP_USER &&
+          (process.env.SMTP_PASSWORD || process.env.SMTP_PASS)
+      ),
+      gmailConfigured: Boolean(
+        process.env.EMAIL_USER &&
+          (process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS)
+      ),
     },
   });
 }

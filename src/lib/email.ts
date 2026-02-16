@@ -2,53 +2,80 @@ import nodemailer from "nodemailer";
 
 // Singleton del transporter para reusar conexiones TLS
 let cachedTransporter: nodemailer.Transporter | null = null;
+let hasLoggedMissingEmailConfig = false;
+let cachedGmailTransporter: nodemailer.Transporter | null = null;
+let cachedSmtpTransporter: nodemailer.Transporter | null = null;
 
 const getSmtpPassword = () =>
   process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+const getEmailPassword = () =>
+  process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
 
-const getTransporter = () => {
-  if (cachedTransporter) return cachedTransporter;
+type MailProvider = "smtp" | "gmail";
 
+const getSmtpTransporter = (): nodemailer.Transporter | null => {
+  if (cachedSmtpTransporter) return cachedSmtpTransporter;
   const smtpPassword = getSmtpPassword();
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !smtpPassword) {
+    return null;
+  }
 
-  // Prioridad 1: SMTP genérico (producción recomendado)
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && smtpPassword) {
-    console.log(`📧 Usando SMTP: ${process.env.SMTP_HOST}`);
-    cachedTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_PORT === "465",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: smtpPassword,
-      },
-    });
+  cachedSmtpTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_PORT === "465",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: smtpPassword,
+    },
+  });
+  return cachedSmtpTransporter;
+};
+
+const getGmailTransporter = (): nodemailer.Transporter | null => {
+  if (cachedGmailTransporter) return cachedGmailTransporter;
+  const emailPassword = getEmailPassword();
+  if (!process.env.EMAIL_USER || !emailPassword) return null;
+  cachedGmailTransporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: emailPassword,
+    },
+  });
+  return cachedGmailTransporter;
+};
+
+const getProviderOrder = (): MailProvider[] => {
+  // Se mantiene preferencia SMTP para producción, con fallback real a Gmail.
+  const order: MailProvider[] = [];
+  if (getSmtpTransporter()) order.push("smtp");
+  if (getGmailTransporter()) order.push("gmail");
+  return order;
+};
+
+const getTransporter = (): nodemailer.Transporter | null => {
+  if (cachedTransporter) return cachedTransporter;
+  const [primaryProvider] = getProviderOrder();
+  if (primaryProvider === "smtp") {
+    cachedTransporter = getSmtpTransporter();
+    return cachedTransporter;
+  }
+  if (primaryProvider === "gmail") {
+    cachedTransporter = getGmailTransporter();
     return cachedTransporter;
   }
 
-  // Prioridad 2: Gmail con App Password (fallback útil en producción)
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    if (process.env.NODE_ENV === "production") {
-      console.warn(
-        "⚠️ SMTP incompleto/no configurado. Usando fallback Gmail (EMAIL_USER/EMAIL_PASSWORD)."
-      );
-    }
-    console.log(`📧 Usando Gmail: ${process.env.EMAIL_USER}`);
-    cachedTransporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
-    return cachedTransporter;
+  if (!hasLoggedMissingEmailConfig) {
+    console.warn(
+      "⚠️ Email deshabilitado: falta configurar SMTP_HOST/SMTP_USER/SMTP_PASSWORD (o SMTP_PASS), o EMAIL_USER/EMAIL_PASSWORD (o EMAIL_PASS)."
+    );
+    hasLoggedMissingEmailConfig = true;
   }
 
-  throw new Error(
-    "❌ Configura SMTP_HOST, SMTP_USER y SMTP_PASSWORD (o SMTP_PASS), o EMAIL_USER y EMAIL_PASSWORD."
-  );
+  return null;
 };
 
 interface EmailData {
@@ -60,41 +87,64 @@ interface EmailData {
 
 // Función base para enviar emails
 export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
+  const providers = getProviderOrder();
+  if (providers.length === 0) {
+    // Dispara warning de config una sola vez.
+    getTransporter();
+    return false;
+  }
+
   try {
-    const transporter = getTransporter();
     const smtpPassword = getSmtpPassword();
+    const emailPassword = getEmailPassword();
     const usingGmailFallback = Boolean(
       process.env.EMAIL_USER &&
-        process.env.EMAIL_PASSWORD &&
+        emailPassword &&
         (!process.env.SMTP_HOST || !process.env.SMTP_USER || !smtpPassword)
     );
-    const fromAddress = usingGmailFallback
-      ? process.env.EMAIL_USER
-      : process.env.EMAIL_FROM ||
-        process.env.EMAIL_USER ||
-        process.env.SMTP_USER ||
-        "noreply@spelplaut.com";
+    for (const provider of providers) {
+      const transporter =
+        provider === "smtp" ? getSmtpTransporter() : getGmailTransporter();
+      if (!transporter) continue;
+      const usingGmail = provider === "gmail";
+      const fromAddress = usingGmail
+        ? process.env.EMAIL_USER
+        : process.env.EMAIL_FROM ||
+          process.env.SMTP_USER ||
+          process.env.EMAIL_USER ||
+          "noreply@spelplaut.com";
 
-    const mailOptions = {
-      from: `"SpelPlaut - Reservas" <${fromAddress}>`,
-      replyTo:
-        usingGmailFallback &&
-        process.env.EMAIL_FROM &&
-        process.env.EMAIL_FROM !== process.env.EMAIL_USER
-          ? process.env.EMAIL_FROM
-          : undefined,
-      to: emailData.to,
-      subject: emailData.subject,
-      html: emailData.html,
-      text: emailData.text,
-    };
+      const mailOptions = {
+        from: `"SpelPlaut - Reservas" <${fromAddress}>`,
+        replyTo:
+          usingGmail &&
+          process.env.EMAIL_FROM &&
+          process.env.EMAIL_FROM !== process.env.EMAIL_USER
+            ? process.env.EMAIL_FROM
+            : undefined,
+        to: emailData.to,
+        subject: emailData.subject,
+        html: emailData.html,
+        text: emailData.text,
+      };
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log(
-      `✅ Email enviado exitosamente a ${emailData.to}`,
-      result.messageId
-    );
-    return true;
+      try {
+        const result = await transporter.sendMail(mailOptions);
+        if (usingGmail && !usingGmailFallback && process.env.NODE_ENV === "production") {
+          console.warn(
+            "⚠️ Envío realizado por Gmail fallback después de fallar SMTP."
+          );
+        }
+        console.log(
+          `✅ Email enviado exitosamente a ${emailData.to} via ${provider}`,
+          result.messageId
+        );
+        return true;
+      } catch (providerError) {
+        console.error(`❌ Falló envío por ${provider}:`, providerError);
+      }
+    }
+    return false;
   } catch (error) {
     console.error("❌ Error enviando email:", error);
     return false;
