@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener el usuario completo de la base de datos
-    const user = await Usuario.findById(userPayload.userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const user = await Usuario.findById(userPayload.userId).lean() as any;
     if (!user) {
       return NextResponse.json<ApiResponse>(
         {
@@ -88,7 +89,8 @@ export async function GET(request: NextRequest) {
     const reservas = await Reserva.find(filters)
       .populate("cancha_id", "nombre tipo ubicacion precio_hora")
       .populate("usuario_id", "nombre_completo email telefono")
-      .sort({ fecha: -1, hora_inicio: 1 });
+      .sort({ fecha: -1, hora_inicio: 1 })
+      .lean();
 
     return NextResponse.json<ApiResponse>({
       success: true,
@@ -117,18 +119,6 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           message: "Acceso denegado. Debes iniciar sesión.",
-        },
-        { status: 401 }
-      );
-    }
-
-    // Obtener el usuario completo de la base de datos
-    const user = await Usuario.findById(userPayload.userId);
-    if (!user) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Usuario no encontrado.",
         },
         { status: 401 }
       );
@@ -163,8 +153,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar que la cancha existe y está disponible
-    const cancha = await Cancha.findById(cancha_id);
+    // Obtener usuario y cancha en paralelo (queries independientes)
+    const [user, cancha] = (await Promise.all([
+      Usuario.findById(userPayload.userId).lean(),
+      Cancha.findById(cancha_id).lean(),
+    ])) as // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [any, any];
+
+    if (!user) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Usuario no encontrado.",
+        },
+        { status: 401 }
+      );
+    }
+
     if (!cancha) {
       return NextResponse.json<ApiResponse>(
         {
@@ -352,7 +357,7 @@ export async function POST(request: NextRequest) {
           ],
         },
       ],
-    });
+    }).select('hora_inicio hora_fin').lean();
 
     if (reservasSuperpuestas.length > 0) {
       return NextResponse.json<ApiResponse>(
@@ -423,33 +428,29 @@ export async function POST(request: NextRequest) {
       { path: "usuario_id", select: "nombre_completo email" },
     ]);
 
-    // Enviar email de confirmación (de forma asíncrona)
-    try {
-      const usuario = await Usuario.findById(user._id);
-      if (usuario && usuario.email) {
-        const emailSent = await sendReservationConfirmation(
-          usuario.email,
-          usuario.nombre_completo || "Usuario",
-          {
-            canchaName: (nuevaReserva.cancha_id as { nombre: string }).nombre,
-            fecha: fechaReservaDate.toISOString(),
-            horaInicio: hora_inicio,
-            horaFin: hora_fin,
-            precio: Number(precio_total),
-            metodoPago: metodo_pago || "efectivo",
-            reservaId: nuevaReserva._id.toString(),
-          }
-        );
-
-        if (emailSent) {
-          console.log(`📧 Email de confirmación enviado a ${usuario.email}`);
-        } else {
-          console.log(`❌ Error enviando email a ${usuario.email}`);
+    // Enviar email de confirmación (fire-and-forget, no bloquea la respuesta)
+    if (user.email) {
+      void sendReservationConfirmation(
+        user.email,
+        user.nombre_completo || "Usuario",
+        {
+          canchaName: (nuevaReserva.cancha_id as { nombre: string }).nombre,
+          fecha: fechaReservaDate.toISOString(),
+          horaInicio: hora_inicio,
+          horaFin: hora_fin,
+          precio: Number(precio_total),
+          metodoPago: metodo_pago || "efectivo",
+          reservaId: nuevaReserva._id.toString(),
         }
-      }
-    } catch (emailError) {
-      console.error("❌ Error enviando email de confirmación:", emailError);
-      // No fallar la reserva por errores de email
+      ).then((sent) => {
+        if (sent) {
+          console.log(`📧 Email de confirmación enviado a ${user.email}`);
+        } else {
+          console.log(`❌ Error enviando email a ${user.email}`);
+        }
+      }).catch((emailError) => {
+        console.error("❌ Error enviando email de confirmación:", emailError);
+      });
     }
 
     return NextResponse.json<ApiResponse>(

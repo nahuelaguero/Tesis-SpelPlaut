@@ -99,6 +99,9 @@ yarn.lock
 .env.test.local
 .env.production.local
 
+# Docs images (screenshots, diagrams, etc.)
+docs/images/
+
 # Cookies and sessions
 cookies.txt
 sessions/
