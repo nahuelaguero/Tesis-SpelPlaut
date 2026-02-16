@@ -111,6 +111,7 @@ const canchaSchema = new mongoose.Schema<Cancha>(
 // Crear índices
 canchaSchema.index({ tipo_cancha: 1, disponible: 1 });
 canchaSchema.index({ ubicacion: 1 });
+canchaSchema.index({ disponible: 1, createdAt: -1 });
 
 export default mongoose.models.Cancha ||
   mongoose.model<Cancha>("Cancha", canchaSchema, "canchas");

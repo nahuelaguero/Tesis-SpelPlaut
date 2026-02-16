@@ -67,7 +67,8 @@ export async function GET(
     }
 
     // Buscar cancha
-    const cancha = await Cancha.findById(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cancha = await Cancha.findById(id).lean() as any;
     if (!cancha) {
       return NextResponse.json<ApiResponse>(
         {
@@ -126,12 +127,12 @@ export async function GET(
       }
     }
 
-    // Obtener reservas existentes para esa fecha
+    // Obtener reservas existentes para esa fecha (usar campo 'fecha' string para aprovechar índice)
     const reservasExistentes = await Reserva.find({
       cancha_id: id,
-      fecha_reserva: fechaReserva,
+      fecha: fecha,
       estado: { $ne: "cancelada" },
-    }).select("hora_inicio hora_fin");
+    }).select("hora_inicio hora_fin").lean();
 
     // Generar horarios disponibles
     const aperturaMinutos = timeToMinutes(cancha.horario_apertura);

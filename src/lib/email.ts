@@ -1,12 +1,16 @@
 import nodemailer from "nodemailer";
 
-// Configuración del transporter
-const createTransport = () => {
+// Singleton del transporter para reusar conexiones TLS
+let cachedTransporter: nodemailer.Transporter | null = null;
+
+const getTransporter = () => {
+  if (cachedTransporter) return cachedTransporter;
+
   // Para desarrollo: Gmail con App Password
   if (process.env.NODE_ENV === "development") {
     if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
       console.log(`📧 Usando Gmail: ${process.env.EMAIL_USER}`);
-      return nodemailer.createTransport({
+      cachedTransporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
         secure: false,
@@ -15,6 +19,7 @@ const createTransport = () => {
           pass: process.env.EMAIL_PASSWORD,
         },
       });
+      return cachedTransporter;
     }
 
     throw new Error(
@@ -33,7 +38,7 @@ const createTransport = () => {
     );
   }
 
-  return nodemailer.createTransport({
+  cachedTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || "587"),
     secure: process.env.SMTP_PORT === "465",
@@ -42,6 +47,7 @@ const createTransport = () => {
       pass: process.env.SMTP_PASSWORD,
     },
   });
+  return cachedTransporter;
 };
 
 interface EmailData {
@@ -54,7 +60,7 @@ interface EmailData {
 // Función base para enviar emails
 export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
   try {
-    const transporter = createTransport();
+    const transporter = getTransporter();
 
     const mailOptions = {
       from: `"SpelPlaut - Reservas" <${

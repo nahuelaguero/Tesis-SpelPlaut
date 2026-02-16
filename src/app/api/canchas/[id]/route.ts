@@ -57,7 +57,8 @@ export async function GET(
       );
     }
 
-    const canchaFromDB = await Cancha.findById(id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const canchaFromDB = await Cancha.findById(id).lean() as any;
 
     if (!canchaFromDB) {
       return NextResponse.json<ApiResponse>(
@@ -80,30 +81,29 @@ export async function GET(
     };
 
     // Mapear los campos de la base de datos al formato esperado por el frontend
-    const canchaObj = canchaFromDB.toObject
-      ? canchaFromDB.toObject()
-      : canchaFromDB;
     const cancha = {
-      _id: canchaObj._id,
-      nombre: canchaObj.nombre,
-      tipo: tipoMap[canchaObj.tipo_cancha] || canchaObj.tipo_cancha, // Mapear tipo_cancha inglés -> español
-      ubicacion: canchaObj.ubicacion,
-      precio_por_hora: Number(canchaObj.precio_por_hora) || 0, // Asegurar que sea número
-      capacidad_maxima: Number(canchaObj.capacidad_jugadores) || 0, // Asegurar que sea número
-      disponible: canchaObj.disponible, // Campo disponible directo del modelo
-      descripcion: canchaObj.descripcion,
-      servicios: getServiciosPorTipo(canchaObj.tipo_cancha), // Servicios basados en tipo de cancha
-      horario_apertura: canchaObj.horario_apertura,
-      horario_cierre: canchaObj.horario_cierre,
-      imagen_url: canchaObj.imagenes?.[0] || "/api/placeholder/600/400",
+      _id: canchaFromDB._id,
+      nombre: canchaFromDB.nombre,
+      tipo: tipoMap[canchaFromDB.tipo_cancha] || canchaFromDB.tipo_cancha,
+      ubicacion: canchaFromDB.ubicacion,
+      precio_por_hora: Number(canchaFromDB.precio_por_hora) || 0,
+      capacidad_maxima: Number(canchaFromDB.capacidad_jugadores) || 0,
+      disponible: canchaFromDB.disponible,
+      descripcion: canchaFromDB.descripcion,
+      servicios: getServiciosPorTipo(canchaFromDB.tipo_cancha),
+      horario_apertura: canchaFromDB.horario_apertura,
+      horario_cierre: canchaFromDB.horario_cierre,
+      imagen_url: canchaFromDB.imagenes?.[0] || "/api/placeholder/600/400",
       valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
     };
 
-    return NextResponse.json<ApiResponse>({
+    const response = NextResponse.json<ApiResponse>({
       success: true,
       message: "Cancha obtenida exitosamente",
       data: { cancha },
     });
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return response;
   } catch (error) {
     console.error("Error al obtener cancha:", error);
     return NextResponse.json<ApiResponse>(
