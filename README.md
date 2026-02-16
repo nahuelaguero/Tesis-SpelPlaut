@@ -178,7 +178,8 @@ JWT_SECRET=tu-secreto-jwt-super-seguro
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=tu-email@gmail.com
-SMTP_PASS=tu-app-password
+SMTP_PASSWORD=tu-app-password
+# Compatibilidad (legacy): también se acepta SMTP_PASS
 
 # Bancard (Producción)
 BANCARD_PRIVATE_KEY=tu-private-key

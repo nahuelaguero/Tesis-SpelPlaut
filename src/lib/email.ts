@@ -3,51 +3,52 @@ import nodemailer from "nodemailer";
 // Singleton del transporter para reusar conexiones TLS
 let cachedTransporter: nodemailer.Transporter | null = null;
 
+const getSmtpPassword = () =>
+  process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+
 const getTransporter = () => {
   if (cachedTransporter) return cachedTransporter;
 
-  // Para desarrollo: Gmail con App Password
-  if (process.env.NODE_ENV === "development") {
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-      console.log(`📧 Usando Gmail: ${process.env.EMAIL_USER}`);
-      cachedTransporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD,
-        },
-      });
-      return cachedTransporter;
+  const smtpPassword = getSmtpPassword();
+
+  // Prioridad 1: SMTP genérico (producción recomendado)
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && smtpPassword) {
+    console.log(`📧 Usando SMTP: ${process.env.SMTP_HOST}`);
+    cachedTransporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_PORT === "465",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: smtpPassword,
+      },
+    });
+    return cachedTransporter;
+  }
+
+  // Prioridad 2: Gmail con App Password (fallback útil en producción)
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "⚠️ SMTP incompleto/no configurado. Usando fallback Gmail (EMAIL_USER/EMAIL_PASSWORD)."
+      );
     }
-
-    throw new Error(
-      "❌ Para desarrollo necesitas configurar EMAIL_USER y EMAIL_PASSWORD en .env.local"
-    );
+    console.log(`📧 Usando Gmail: ${process.env.EMAIL_USER}`);
+    cachedTransporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+    return cachedTransporter;
   }
 
-  // Para producción: SMTP genérico
-  if (
-    !process.env.SMTP_HOST ||
-    !process.env.SMTP_USER ||
-    !process.env.SMTP_PASSWORD
-  ) {
-    throw new Error(
-      "❌ Para producción necesitas configurar SMTP_HOST, SMTP_USER y SMTP_PASSWORD"
-    );
-  }
-
-  cachedTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_PORT === "465",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
-  return cachedTransporter;
+  throw new Error(
+    "❌ Configura SMTP_HOST, SMTP_USER y SMTP_PASSWORD (o SMTP_PASS), o EMAIL_USER y EMAIL_PASSWORD."
+  );
 };
 
 interface EmailData {
@@ -61,13 +62,27 @@ interface EmailData {
 export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
   try {
     const transporter = getTransporter();
+    const smtpPassword = getSmtpPassword();
+    const usingGmailFallback = Boolean(
+      process.env.EMAIL_USER &&
+        process.env.EMAIL_PASSWORD &&
+        (!process.env.SMTP_HOST || !process.env.SMTP_USER || !smtpPassword)
+    );
+    const fromAddress = usingGmailFallback
+      ? process.env.EMAIL_USER
+      : process.env.EMAIL_FROM ||
+        process.env.EMAIL_USER ||
+        process.env.SMTP_USER ||
+        "noreply@spelplaut.com";
 
     const mailOptions = {
-      from: `"SpelPlaut - Reservas" <${
-        process.env.EMAIL_FROM ||
-        process.env.EMAIL_USER ||
-        "noreply@spelplaut.com"
-      }>`,
+      from: `"SpelPlaut - Reservas" <${fromAddress}>`,
+      replyTo:
+        usingGmailFallback &&
+        process.env.EMAIL_FROM &&
+        process.env.EMAIL_FROM !== process.env.EMAIL_USER
+          ? process.env.EMAIL_FROM
+          : undefined,
       to: emailData.to,
       subject: emailData.subject,
       html: emailData.html,

@@ -1,22 +1,21 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 echo "🚀 Running pre-push checks..."
 
 echo "🔍 Checking lint..."
-if ! pnpm run lint; then
+if ! bun run lint; then
     echo "❌ Lint check failed! Please fix the issues before pushing."
     exit 1
 fi
 
 echo "🔧 Checking types..."
-if ! pnpm run type-check; then
+if ! bun run type-check; then
     echo "❌ Type check failed! Please fix the issues before pushing."
     exit 1
 fi
 
 echo "🏗️ Building project..."
-if ! pnpm run build; then
+if ! bun run build; then
     echo "❌ Build failed! Please fix the issues before pushing."
     exit 1
 fi
