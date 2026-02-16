@@ -90,9 +90,10 @@ test-results/
 coverage/
 scripts/stress-tests/results/
 
-# Package lock files (keeping pnpm-lock.yaml only)
+# Package lock files (keeping bun.lock only)
 package-lock.json
 yarn.lock
+pnpm-lock.yaml
 
 # Local environment config
 .env.local
