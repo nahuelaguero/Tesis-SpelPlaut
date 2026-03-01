@@ -65,7 +65,7 @@ MONGODB_URI=mongodb+srv://admin:admin123@cluster0.abcdef.mongodb.net/spelplaut?r
 ### **6. REINICIAR SERVIDOR:**
 
 ```bash
-pnpm dev
+bun run dev
 ```
 
 ## ✅ **SOLUCIÓN RÁPIDA:**
@@ -81,7 +81,7 @@ pkill -f "next dev"
 # 3. Actualizar .env.local con nuevo string
 
 # 4. Reiniciar
-pnpm dev
+bun run dev
 ```
 
 ## 🔍 **VERIFICAR CONEXIÓN:**

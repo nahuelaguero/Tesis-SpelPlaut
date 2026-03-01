@@ -3,7 +3,7 @@
 # Levantar servidor en background
 echo "🚀 Levantando servidor..."
 cd /Users/nahuelaguero/Documents/universidad/reserva-cancha-app
-pnpm dev > /tmp/spelplaut-dev.log 2>&1 &
+bun run dev > /tmp/spelplaut-dev.log 2>&1 &
 SERVER_PID=$!
 
 # Esperar a que esté listo

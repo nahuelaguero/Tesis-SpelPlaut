@@ -23,7 +23,7 @@ echo ""
 echo "Verificando servidor..."
 if ! curl -s "$BASE_URL/api/canchas" > /dev/null 2>&1; then
   echo "ERROR: El servidor no esta corriendo en $BASE_URL"
-  echo "Ejecuta: pnpm build && pnpm start"
+  echo "Ejecuta: bun run build && bun run start"
   exit 1
 fi
 echo "Servidor OK"

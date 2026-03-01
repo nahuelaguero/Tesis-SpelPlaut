@@ -7,7 +7,7 @@ import http from "k6/http";
 import { check, sleep, group } from "k6";
 import { Rate, Trend, Counter } from "k6/metrics";
 import { BASE_URL, TEST_USER, THRESHOLDS, LOAD_LEVELS } from "../config.js";
-import { login } from "../helpers/auth.js";
+import { login, getAuthCookies } from "../helpers/auth.js";
 
 // Metricas personalizadas
 const errorRate = new Rate("errors");
@@ -16,6 +16,7 @@ const canchaDetailTime = new Trend("cancha_detail_duration", true);
 const horariosTime = new Trend("horarios_duration", true);
 const reservaTime = new Trend("reserva_duration", true);
 const totalRequests = new Counter("total_requests");
+let authCookieHeader = null;
 
 export const options = {
   stages: [
@@ -28,7 +29,7 @@ export const options = {
 
 export function setup() {
   // Login para obtener cookies de autenticacion
-  const loginRes = login(TEST_USER.email, TEST_USER.password, BASE_URL);
+  login(TEST_USER.email, TEST_USER.password, BASE_URL);
 
   // Obtener lista de canchas
   const canchasRes = http.get(`${BASE_URL}/api/canchas`);
@@ -50,20 +51,18 @@ export function setup() {
 export default function (data) {
   const canchaIds = data.canchaIds;
 
-  // Login por VU (cada usuario virtual tiene su propia sesion)
-  const jar = http.cookieJar();
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login`,
-    JSON.stringify({
-      email: TEST_USER.email,
-      password: TEST_USER.password,
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  // Login una sola vez por VU y reusar cookie para todo el escenario.
+  if (!authCookieHeader) {
+    const loginRes = login(TEST_USER.email, TEST_USER.password, BASE_URL);
+    const authCookies = getAuthCookies(loginRes);
+    const authToken = authCookies["auth-token"];
 
-  if (loginRes.status !== 200) {
-    errorRate.add(true);
-    return;
+    if (!authToken) {
+      errorRate.add(true);
+      return;
+    }
+
+    authCookieHeader = `auth-token=${authToken}`;
   }
 
   // Flujo tipico de usuario: navegar, ver, consultar, reservar
@@ -137,7 +136,13 @@ export default function (data) {
             precio_total: 100000,
             metodo_pago: "efectivo",
           }),
-          { headers: { "Content-Type": "application/json" } }
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: authCookieHeader,
+            },
+            responseCallback: http.expectedStatuses(201, 409),
+          }
         );
         reservaTime.add(res.timings.duration);
         totalRequests.add(1);

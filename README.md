@@ -143,7 +143,7 @@ El sistema implementa **3 roles principales** con permisos específicos:
 
 ```bash
 node >= 18.0.0
-pnpm >= 8.0.0
+bun >= 1.0.0
 MongoDB >= 6.0.0
 ```
 
@@ -155,35 +155,50 @@ git clone [repository-url]
 cd reserva-cancha-app
 
 # Instalar dependencias
-pnpm install
+bun install
 
 # Configurar variables de entorno
 cp .env.example .env.local
 # Editar .env.local con tus configuraciones
 
 # Ejecutar en desarrollo
-pnpm dev
+bun run dev
 ```
 
 ### Variables de Entorno Requeridas
 
 ```env
-# Base de datos
-MONGODB_URI=mongodb+srv://nahuelaguerosan:CDaHO2t0v8L8Q9Y9@cluster0.nisl1og.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+# Base de datos (Cluster dedicado SPELPLAUT)
+MONGODB_URI=mongodb+srv://nahuelaguerosan_db_user:bOUe0oUyUUR3coPC@spelplautcluster.r5re3gf.mongodb.net/spelplaut-db?retryWrites=true&w=majority&appName=SpelplautCluster
 
 # JWT
-JWT_SECRET=tu-secreto-jwt-super-seguro
+JWT_SECRET=spelplaut-jwt-secret-2024
 
-# Email
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=tu-email@gmail.com
-SMTP_PASSWORD=tu-app-password
-# Compatibilidad (legacy): también se acepta SMTP_PASS
+# Email (Gmail App Password)
+EMAIL_USER=spelplaut@gmail.com
+EMAIL_PASSWORD=qwkttjvgyegmuknc
+EMAIL_FROM=spelplaut@gmail.com
 
-# Bancard (Producción)
-BANCARD_PRIVATE_KEY=tu-private-key
-BANCARD_PUBLIC_KEY=tu-public-key
+# Auth
+NEXTAUTH_SECRET=spelplaut-secret-development-2024
+NEXTAUTH_URL=http://localhost:3000
+```
+
+### Datos de Acceso (Tesis)
+
+```
+# Admin
+Email: admin@lomaplata.com
+Password: admin123
+
+# MongoDB Atlas - Cluster dedicado: SpelplautCluster
+URI: mongodb+srv://nahuelaguerosan_db_user:bOUe0oUyUUR3coPC@spelplautcluster.r5re3gf.mongodb.net/spelplaut-db
+Usuario DB: nahuelaguerosan_db_user
+Password DB: bOUe0oUyUUR3coPC
+Base de datos: spelplaut-db
+
+# Vercel (producción)
+URL: https://tesis-spel-plaut.vercel.app
 ```
 
 ## 📁 Estructura del Proyecto
@@ -292,33 +307,33 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ```bash
 # Desarrollo rápido (recomendado para desarrollo diario)
-pnpm run dev
+bun run dev
 
 # Desarrollo con checks de lint y tipos (sin build)
-pnpm run dev:check
+bun run dev:check
 
 # Desarrollo con checks completos (lint + type-check + build + dev)
-pnpm run dev:full
+bun run dev:full
 
 # Build de producción
-pnpm run build
+bun run build
 
 # Build con checks previos
-pnpm run build:check
+bun run build:check
 ```
 
 ### Scripts de Calidad de Código
 
 ```bash
 # Linter
-pnpm run lint          # Verificar errores de lint
-pnpm run lint:fix      # Corregir errores de lint automáticamente
+bun run lint          # Verificar errores de lint
+bun run lint:fix      # Corregir errores de lint automáticamente
 
 # Type checking
-pnpm run type-check    # Verificar tipos de TypeScript
+bun run type-check    # Verificar tipos de TypeScript
 
 # Datos de prueba
-pnpm run seed          # Poblar base de datos con datos de prueba
+bun run seed          # Poblar base de datos con datos de prueba
 ```
 
 ## 🔧 Git Hooks (Calidad de Código Automática)
@@ -336,16 +351,16 @@ Se ejecuta **antes de cada commit**:
 
 Se ejecuta **antes de cada push**:
 
-- ✅ Ejecuta `pnpm run lint` (verifica todo el proyecto)
-- ✅ Ejecuta `pnpm run type-check` (verifica tipos)
-- ✅ Ejecuta `pnpm run build` (verifica que compile)
+- ✅ Ejecuta `bun run lint` (verifica todo el proyecto)
+- ✅ Ejecuta `bun run type-check` (verifica tipos)
+- ✅ Ejecuta `bun run build` (verifica que compile)
 - ❌ **Bloquea el push si algún check falla**
 
 ### Flujo de Trabajo Recomendado
 
 ```bash
 # 1. Desarrollo rápido
-pnpm run dev
+bun run dev
 
 # 2. Hacer cambios y commit (lint automático en archivos modificados)
 git add .

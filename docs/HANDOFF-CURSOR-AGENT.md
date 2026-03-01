@@ -205,19 +205,19 @@ src/
 
 ```bash
 # Instalar dependencias de mapa
-pnpm add leaflet react-leaflet @types/leaflet
+bun add leaflet react-leaflet @types/leaflet
 
 # Instalar para gráficos
-pnpm add recharts date-fns
+bun add recharts date-fns
 
 # Desarrollo
-pnpm dev
+bun run dev
 
 # Build y verificar
-pnpm build
+bun run build
 
 # Linting
-pnpm lint
+bun run lint
 ```
 
 ---
@@ -268,6 +268,6 @@ pnpm lint
 - Next.js 14.2.5 ✅
 - Mongoose 8.5.2 ✅
 - Tailwind + Radix UI ✅
-- Todas las deps sincronizadas en pnpm-lock.yaml ✅
+- Todas las deps sincronizadas en bun.lock ✅
 
 **🚨 IMPORTANTE:** El proyecto tiene base sólida, solo faltan las UI components críticas para completar la experiencia de usuario. Todo el backend está preparado y funcionando.

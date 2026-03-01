@@ -445,8 +445,6 @@ export async function POST(request: NextRequest) {
       ).then((sent) => {
         if (sent) {
           console.log(`📧 Email de confirmación enviado a ${user.email}`);
-        } else {
-          console.log(`❌ Error enviando email a ${user.email}`);
         }
       }).catch((emailError) => {
         console.error("❌ Error enviando email de confirmación:", emailError);
