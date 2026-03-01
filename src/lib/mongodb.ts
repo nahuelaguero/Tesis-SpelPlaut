@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 
 const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/spelplaut"; // Usar base de datos local
+  process.env.MONGODB_URI || "mongodb://localhost:27017/spelplaut-db";
+
+// Forzar nombre de base de datos spelplaut-db si la URI no lo especifica
+const DB_NAME = "spelplaut-db";
 
 if (!MONGODB_URI) {
   throw new Error(
@@ -40,7 +43,7 @@ async function connectDB(): Promise<typeof mongoose> {
       maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI, opts);
+    cached!.promise = mongoose.connect(MONGODB_URI, { ...opts, dbName: DB_NAME });
   }
 
   try {
