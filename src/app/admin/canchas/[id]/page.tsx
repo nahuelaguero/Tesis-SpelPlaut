@@ -22,9 +22,9 @@ import {
   AlertCircle,
   CheckCircle,
   Edit,
-  Camera,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { ImageUploader } from "@/components/forms/ImageUploader";
 
 interface FormData {
   nombre: string;
@@ -194,6 +194,7 @@ export default function EditarCanchaPage() {
         horario_apertura: formData.horario_apertura,
         horario_cierre: formData.horario_cierre,
         disponible: formData.disponible,
+        imagenes: currentImages,
       };
 
       const response = await fetch(`/api/admin/canchas/${canchaId}`, {
@@ -485,35 +486,12 @@ export default function EditarCanchaPage() {
               {/* Sección de imágenes */}
               <div>
                 <Label className="text-base font-medium">Imágenes</Label>
-                <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6">
-                  <div className="text-center">
-                    <Camera className="h-8 w-8 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      Sistema de carga de imágenes en desarrollo
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Por ahora se usa una imagen por defecto
-                    </p>
-                    {currentImages.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-600 mb-2">
-                          Imágenes actuales:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {currentImages.map((img, index) => (
-                            <div
-                              key={index}
-                              className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center"
-                            >
-                              <span className="text-xs text-gray-500">
-                                Img {index + 1}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="mt-2">
+                  <ImageUploader
+                    maxImages={10}
+                    currentImages={currentImages}
+                    onImagesChange={setCurrentImages}
+                  />
                 </div>
               </div>
 

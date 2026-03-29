@@ -22,9 +22,9 @@ import {
   Users,
   AlertCircle,
   CheckCircle,
-  Camera,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { ImageUploader } from "@/components/forms/ImageUploader";
 
 interface FormData {
   nombre: string;
@@ -50,6 +50,7 @@ export default function NuevaCanchaPage() {
     horario_apertura: "06:00",
     horario_cierre: "22:00",
   });
+  const [imagenes, setImagenes] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
@@ -126,7 +127,7 @@ export default function NuevaCanchaPage() {
         precio_por_hora: parseFloat(formData.precio_por_hora),
         capacidad_jugadores: parseInt(formData.capacidad_jugadores),
         disponible: true,
-        imagenes: ["/api/placeholder/600/400"], // Imagen por defecto
+        imagenes,
       };
 
       const response = await fetch("/api/admin/canchas", {
@@ -442,20 +443,12 @@ export default function NuevaCanchaPage() {
                 <Label className="text-base font-medium">
                   Imágenes de la cancha
                 </Label>
-                <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6">
-                  <div className="text-center">
-                    <Camera className="h-8 w-8 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      Sistema de carga de imágenes en desarrollo
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Por ahora se asignará una imagen por defecto
-                    </p>
-                    <div className="mt-4 text-xs text-blue-600">
-                      💡 Próximamente: Arrastra archivos aquí o haz clic para
-                      subir
-                    </div>
-                  </div>
+                <div className="mt-2">
+                  <ImageUploader
+                    maxImages={10}
+                    currentImages={imagenes}
+                    onImagesChange={setImagenes}
+                  />
                 </div>
               </div>
 
