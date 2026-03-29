@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       cancha.disponibilidad =
-        cancha.disponibilidad?.filter((item) => item.fecha !== fecha) || [];
+        cancha.disponibilidad?.filter((item: { fecha: string; disponible: boolean; motivo?: string }) => item.fecha !== fecha) || [];
     }
 
     await cancha.save();
