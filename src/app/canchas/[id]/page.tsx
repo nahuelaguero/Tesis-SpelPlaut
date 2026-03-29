@@ -74,6 +74,15 @@ export default function CanchaDetailsPage() {
   >([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
+  // Reseñas
+  const [resenas, setResenas] = useState<{ _id: string; calificacion: number; comentario: string; createdAt: string; usuario_id: { nombre_completo: string } }[]>([]);
+  const [totalResenas, setTotalResenas] = useState(0);
+  const [promedioResenas, setPromedioResenas] = useState<number | null>(null);
+  const [nuevaCalificacion, setNuevaCalificacion] = useState(0);
+  const [nuevoComentario, setNuevoComentario] = useState("");
+  const [enviandoResena, setEnviandoResena] = useState(false);
+  const [resenaMsg, setResenaMsg] = useState("");
+
   // Coordenadas simuladas para Loma Plata (centro aproximado)
   const baseLatitude = -22.3667;
   const baseLongitude = -59.85;
@@ -154,6 +163,7 @@ export default function CanchaDetailsPage() {
           const data = await response.json();
           if (data.success) {
             setCancha(data.data.cancha);
+            void fetchResenas(params.id as string);
           }
         } else {
           console.error("Error al obtener cancha:", response.statusText);
@@ -169,6 +179,41 @@ export default function CanchaDetailsPage() {
       fetchCancha();
     }
   }, [params.id]);
+
+  const fetchResenas = async (canchaId: string) => {
+    const res = await fetch(`/api/resenas?cancha_id=${canchaId}`);
+    const data = await res.json();
+    if (data.success) {
+      setResenas(data.data.resenas);
+      setTotalResenas(data.data.total);
+      setPromedioResenas(data.data.promedio);
+    }
+  };
+
+  const handleEnviarResena = async () => {
+    if (!nuevaCalificacion) return;
+    setEnviandoResena(true);
+    setResenaMsg("");
+    try {
+      const res = await fetch("/api/resenas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ cancha_id: cancha?._id, calificacion: nuevaCalificacion, comentario: nuevoComentario }),
+      });
+      const data = await res.json();
+      setResenaMsg(data.message);
+      if (data.success && cancha) {
+        setNuevaCalificacion(0);
+        setNuevoComentario("");
+        void fetchResenas(cancha._id);
+      }
+    } catch {
+      setResenaMsg("Error al enviar la reseña.");
+    } finally {
+      setEnviandoResena(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-PY", {
@@ -632,6 +677,92 @@ export default function CanchaDetailsPage() {
                   </p>
                 )}
               </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sección de reseñas */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-900 font-bold">
+                <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                Reseñas
+                {totalResenas > 0 && (
+                  <span className="text-sm font-normal text-gray-500">
+                    ({promedioResenas} ★ · {totalResenas} reseña{totalResenas !== 1 ? "s" : ""})
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Formulario para dejar reseña */}
+              {user && (
+                <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+                  <p className="font-medium text-gray-800 text-sm">Dejá tu reseña</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setNuevaCalificacion(star)}
+                        className="text-2xl leading-none"
+                      >
+                        <Star className={`h-6 w-6 ${star <= nuevaCalificacion ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={nuevoComentario}
+                    onChange={(e) => setNuevoComentario(e.target.value)}
+                    placeholder="Comentario (opcional)"
+                    maxLength={500}
+                    rows={2}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <Button
+                    onClick={() => void handleEnviarResena()}
+                    disabled={enviandoResena || !nuevaCalificacion}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {enviandoResena ? "Enviando..." : "Enviar reseña"}
+                  </Button>
+                  {resenaMsg && (
+                    <p className={`text-sm ${resenaMsg.includes("exitosamente") ? "text-emerald-600" : "text-red-500"}`}>
+                      {resenaMsg}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Lista de reseñas */}
+              {resenas.length === 0 ? (
+                <p className="text-gray-500 text-sm">Aún no hay reseñas para esta cancha.</p>
+              ) : (
+                <div className="space-y-4">
+                  {resenas.map((resena) => (
+                    <div key={resena._id} className="border-b pb-4 last:border-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star key={star} className={`h-4 w-4 ${star <= resena.calificacion ? "text-yellow-400 fill-current" : "text-gray-200"}`} />
+                          ))}
+                        </div>
+                        <span className="font-medium text-sm text-gray-800">
+                          {resena.usuario_id?.nombre_completo || "Usuario"}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(resena.createdAt).toLocaleDateString("es-PY")}
+                        </span>
+                      </div>
+                      {resena.comentario && (
+                        <p className="text-sm text-gray-600">{resena.comentario}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

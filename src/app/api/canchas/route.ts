@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Cancha from "@/models/Cancha";
+import Resena from "@/models/Resena";
 import { requireAdmin } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 import { getMinimumPrice } from "@/lib/pricing";
@@ -26,8 +27,20 @@ export async function GET() {
       Volleyball: "Vóley",
     };
 
+    // Calcular promedio real de reseñas por cancha
+    const canchaIds = canchasFromDB.map((c) => c._id);
+    const resenasAgregadas = await Resena.aggregate([
+      { $match: { cancha_id: { $in: canchaIds } } },
+      { $group: { _id: "$cancha_id", promedio: { $avg: "$calificacion" }, total: { $sum: 1 } } },
+    ]);
+    const resenasMap: Record<string, { promedio: number; total: number }> = {};
+    for (const r of resenasAgregadas) {
+      resenasMap[r._id.toString()] = { promedio: Math.round(r.promedio * 10) / 10, total: r.total };
+    }
+
     // Mapear los campos de la base de datos al formato esperado por el frontend
     const canchas = canchasFromDB.map((cancha) => {
+      const stats = resenasMap[cancha._id.toString()];
       return {
         _id: cancha._id,
         nombre: cancha.nombre,
@@ -48,7 +61,8 @@ export async function GET() {
         intervalo_reserva_minutos: cancha.intervalo_reserva_minutos || 60,
         aprobacion_automatica: cancha.aprobacion_automatica !== false,
         imagen_url: cancha.imagenes?.[0] || "/api/placeholder/600/400",
-        valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
+        valoracion: stats?.promedio ?? null,
+        total_resenas: stats?.total ?? 0,
       };
     });
 
