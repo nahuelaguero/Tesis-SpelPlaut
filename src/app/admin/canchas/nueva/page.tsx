@@ -373,7 +373,7 @@ export default function NuevaCanchaPage() {
                     onChange={handleInputChange}
                     placeholder="80000"
                     min="1"
-                    step="1000"
+                    step="1"
                     required
                   />
                 </div>
