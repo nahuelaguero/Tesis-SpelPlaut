@@ -4,7 +4,7 @@ import Reserva from "@/models/Reserva";
 import Cancha from "@/models/Cancha";
 import Usuario from "@/models/Usuario";
 import { requireAuth, isValidObjectId } from "@/lib/auth";
-import { ApiResponse } from "@/types";
+import { ApiResponse, type Usuario as UsuarioDoc, type Cancha as CanchaDoc } from "@/types";
 import {
   calculateReservationPrice,
   getDayName,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = await Usuario.findById(userPayload.userId).lean();
+    const user = await Usuario.findById(userPayload.userId).lean() as unknown as UsuarioDoc | null;
     if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "Usuario no encontrado." },
@@ -160,8 +160,8 @@ export async function POST(request: NextRequest) {
     }
 
     const [user, cancha] = await Promise.all([
-      Usuario.findById(userPayload.userId).lean(),
-      Cancha.findById(cancha_id).lean(),
+      Usuario.findById(userPayload.userId).lean() as unknown as UsuarioDoc | null,
+      Cancha.findById(cancha_id).lean() as unknown as CanchaDoc | null,
     ]);
 
     if (!user) {
@@ -420,7 +420,7 @@ export async function POST(request: NextRequest) {
     if (estado === "pendiente_aprobacion") {
       const owner = await Usuario.findById(
         (nuevaReserva.cancha_id as { propietario_id?: string }).propietario_id
-      ).lean();
+      ).lean() as unknown as UsuarioDoc | null;
 
       if (owner?.email) {
         void sendOwnerReservationPendingApproval(
