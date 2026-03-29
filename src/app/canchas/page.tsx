@@ -32,7 +32,7 @@ interface Cancha {
 }
 
 export default function CanchasPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingCanchas, setLoadingCanchas] = useState(true);

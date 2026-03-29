@@ -8,7 +8,6 @@ import { ApiResponse, type Usuario as UsuarioDoc, type Cancha as CanchaDoc } fro
 import {
   calculateReservationPrice,
   getDayName,
-  isTimeAligned,
   sanitizeInterval,
   timeToMinutes,
 } from "@/lib/pricing";
