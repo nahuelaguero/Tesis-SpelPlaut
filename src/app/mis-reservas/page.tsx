@@ -100,9 +100,7 @@ export default function MisReservasPage() {
       if (!user) return;
 
       try {
-        // Los admins ven todas las reservas, usuarios normales solo las suyas
-        const endpoint =
-          user.rol === "admin" ? "/api/reservas" : "/api/reservas/mis-reservas";
+        const endpoint = "/api/reservas";
         const response = await fetch(endpoint, {
           credentials: "include",
         });
