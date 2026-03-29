@@ -179,17 +179,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.rol === "propietario_cancha") {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message:
-            "Los propietarios de cancha no pueden crear reservas desde este flujo.",
-        },
-        { status: 403 }
-      );
-    }
-
     if (!cancha.disponible) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "La cancha no está disponible." },

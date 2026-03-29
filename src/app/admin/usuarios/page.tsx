@@ -80,12 +80,25 @@ export default function AdminUsuariosPage() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
-      setMessage(`Rol actualizado para usuario ${userId} a ${newRole}`);
-      // Aquí iría la llamada al API real
+      const response = await fetch("/api/admin/usuarios", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ usuario_id: userId, rol: newRole }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsuarios((prev) =>
+          prev.map((u) => (u._id === userId ? { ...u, rol: newRole as Usuario["rol"] } : u))
+        );
+        setMessage("Rol actualizado exitosamente.");
+      } else {
+        setMessage(data.message || "Error al actualizar rol.");
+      }
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error:", error);
-      setMessage("Error al actualizar rol");
+      setMessage("Error al actualizar rol.");
     }
   };
 

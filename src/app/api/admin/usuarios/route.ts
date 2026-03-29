@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Usuario from "@/models/Usuario";
 import { ApiResponse } from "@/types";
 import { verify } from "jsonwebtoken";
+import { isValidObjectId } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,5 +67,57 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const token = request.cookies.get("auth-token")?.value;
+    if (!token) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "No autenticado." }, { status: 401 });
+    }
+
+    let decoded: { userId: string; rol: string };
+    try {
+      decoded = verify(token, process.env.JWT_SECRET || "secret") as { userId: string; rol: string };
+    } catch {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Token inválido." }, { status: 401 });
+    }
+
+    if (decoded.rol !== "admin") {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Solo administradores." }, { status: 403 });
+    }
+
+    const { usuario_id, rol } = await request.json();
+
+    if (!usuario_id || !isValidObjectId(usuario_id)) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "ID de usuario inválido." }, { status: 400 });
+    }
+
+    const validRoles = ["usuario", "propietario_cancha", "admin"];
+    if (!rol || !validRoles.includes(rol)) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Rol inválido." }, { status: 400 });
+    }
+
+    const updated = await Usuario.findByIdAndUpdate(
+      usuario_id,
+      { rol },
+      { new: true }
+    ).select("-contrasena_hash");
+
+    if (!updated) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Usuario no encontrado." }, { status: 404 });
+    }
+
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      message: "Rol actualizado exitosamente.",
+      data: { usuario: updated },
+    });
+  } catch (error) {
+    console.error("Error actualizando usuario:", error);
+    return NextResponse.json<ApiResponse>({ success: false, message: "Error interno del servidor." }, { status: 500 });
   }
 }

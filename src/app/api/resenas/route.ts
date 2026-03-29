@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Resena from "@/models/Resena";
-import Reserva from "@/models/Reserva";
 import { requireAuth, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
@@ -68,23 +67,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "La calificación debe ser un número entero del 1 al 5." },
         { status: 400 }
-      );
-    }
-
-    // Verificar que el usuario tuvo una reserva confirmada en esta cancha
-    const reservaValida = await Reserva.findOne({
-      usuario_id: auth.userId,
-      cancha_id,
-      estado: { $in: ["confirmada", "completada"] },
-    });
-
-    if (!reservaValida) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Solo puedes reseñar canchas donde hayas tenido una reserva confirmada.",
-        },
-        { status: 403 }
       );
     }
 
