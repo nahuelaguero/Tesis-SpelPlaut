@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/lib/geolocation";
-import { calculateReservationPrice } from "@/lib/pricing";
+import { calculateReservationPrice, timeToMinutes } from "@/lib/pricing";
 import type { PrecioHorario } from "@/types";
 import PaymentMethods from "@/components/PaymentMethods";
 import { CalendarioReservas } from "@/components/reservas/CalendarioReservas";
@@ -69,6 +69,7 @@ export default function CanchaDetailsPage() {
   const [horaFin, setHoraFin] = useState("");
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
+  const [duracionSeleccionada, setDuracionSeleccionada] = useState<number>(0); // 0 = usa el intervalo default
   const [slotsDisponibles, setSlotsDisponibles] = useState<
     { hora_inicio: string; hora_fin: string; precio_total: number; duracion_minutos: number }[]
   >([]);
@@ -127,6 +128,8 @@ export default function CanchaDetailsPage() {
       )
     : undefined;
 
+  const intervalo = cancha?.intervalo_reserva_minutos || 60;
+
   useEffect(() => {
     if (!fechaReserva || !cancha) {
       setSlotsDisponibles([]);
@@ -134,8 +137,9 @@ export default function CanchaDetailsPage() {
       setHoraFin("");
       return;
     }
+    const duracion = duracionSeleccionada || intervalo;
     setLoadingSlots(true);
-    fetch(`/api/reservas/disponibilidad?cancha_id=${cancha._id}&fecha=${fechaReserva}`, {
+    fetch(`/api/reservas/disponibilidad?cancha_id=${cancha._id}&fecha=${fechaReserva}&duracion=${duracion}`, {
       credentials: "include",
     })
       .then((r) => r.json())
@@ -150,7 +154,7 @@ export default function CanchaDetailsPage() {
       })
       .catch(() => setSlotsDisponibles([]))
       .finally(() => setLoadingSlots(false));
-  }, [fechaReserva, cancha]);
+  }, [fechaReserva, cancha, duracionSeleccionada]);
 
   useEffect(() => {
     const fetchCancha = async () => {
@@ -565,6 +569,35 @@ export default function CanchaDetailsPage() {
                       e.target.showPicker && e.target.showPicker()
                     }
                   />
+                </div>
+
+                {/* Selector de duración */}
+                <div>
+                  <Label>Duración *</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {Array.from({ length: Math.min(8, Math.floor((timeToMinutes(cancha.horario_cierre) - timeToMinutes(cancha.horario_apertura)) / intervalo)) }, (_, i) => (i + 1) * intervalo).map((mins) => {
+                      const horas = Math.floor(mins / 60);
+                      const minutos = mins % 60;
+                      const label = horas > 0
+                        ? minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`
+                        : `${mins}min`;
+                      const selected = (duracionSeleccionada || intervalo) === mins;
+                      return (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => { setDuracionSeleccionada(mins); setHoraInicio(""); setHoraFin(""); }}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                            selected
+                              ? "bg-emerald-600 text-white border-emerald-600"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-emerald-400"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div>
