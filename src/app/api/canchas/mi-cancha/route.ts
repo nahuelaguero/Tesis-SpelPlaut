@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     const cancha =
       (canchaId
-        ? canchas.find((item) => (item as { _id: unknown })._id?.toString() === canchaId)
+        ? canchas.find((item) => (item as unknown as { _id: unknown })._id?.toString() === canchaId)
         : canchas[0]) || null;
 
     if (!cancha) {
@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
       data: {
         ...cancha,
         canchas: canchas.map((item) => ({
-          _id: (item as { _id: unknown; nombre: string })._id?.toString(),
-          nombre: (item as { _id: unknown; nombre: string }).nombre,
+          _id: (item as unknown as { _id: unknown; nombre: string })._id?.toString(),
+          nombre: (item as unknown as { _id: unknown; nombre: string }).nombre,
         })),
       },
     });
