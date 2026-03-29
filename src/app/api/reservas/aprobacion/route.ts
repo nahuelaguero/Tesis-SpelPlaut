@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       message: "Reservas pendientes obtenidas exitosamente.",
       data: {
         reservas: reservations.map((reservation) => ({
-          _id: reservation._id.toString(),
+          _id: (reservation._id as { toString(): string }).toString(),
           fecha: reservation.fecha,
           hora_inicio: reservation.hora_inicio,
           hora_fin: reservation.hora_fin,
