@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
 import Cancha from "@/models/Cancha";
-import Usuario from "@/models/Usuario";
 import { ApiResponse } from "@/types";
 import { isValidObjectId, requireAuth } from "@/lib/auth";
 import {
