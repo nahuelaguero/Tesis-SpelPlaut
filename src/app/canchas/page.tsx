@@ -355,9 +355,7 @@ export default function CanchasPage() {
                     horario_cierre: cancha.horario_cierre,
                     disponible: cancha.disponible,
                     calificacion_promedio: cancha.valoracion,
-                    total_reviews: cancha.valoracion
-                      ? Math.floor(Math.random() * 50) + 5
-                      : undefined,
+                    total_reviews: undefined,
                     imagenes: cancha.imagen_url
                       ? [cancha.imagen_url]
                       : ["/api/placeholder/600/400"],
