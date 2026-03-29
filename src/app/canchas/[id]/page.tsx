@@ -69,6 +69,10 @@ export default function CanchaDetailsPage() {
   const [horaFin, setHoraFin] = useState("");
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
+  const [slotsDisponibles, setSlotsDisponibles] = useState<
+    { hora_inicio: string; hora_fin: string; precio_total: number; duracion_minutos: number }[]
+  >([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Coordenadas simuladas para Loma Plata (centro aproximado)
   const baseLatitude = -22.3667;
@@ -113,6 +117,31 @@ export default function CanchaDetailsPage() {
         canchaCoordinates.longitude
       )
     : undefined;
+
+  useEffect(() => {
+    if (!fechaReserva || !cancha) {
+      setSlotsDisponibles([]);
+      setHoraInicio("");
+      setHoraFin("");
+      return;
+    }
+    setLoadingSlots(true);
+    fetch(`/api/reservas/disponibilidad?cancha_id=${cancha._id}&fecha=${fechaReserva}`, {
+      credentials: "include",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setSlotsDisponibles(data.data.disponibilidad.horarios_disponibles_detalle || []);
+        } else {
+          setSlotsDisponibles([]);
+        }
+        setHoraInicio("");
+        setHoraFin("");
+      })
+      .catch(() => setSlotsDisponibles([]))
+      .finally(() => setLoadingSlots(false));
+  }, [fechaReserva, cancha]);
 
   useEffect(() => {
     const fetchCancha = async () => {
@@ -424,8 +453,10 @@ export default function CanchaDetailsPage() {
                 setReservationSuccess(true);
               }}
               onSlotSelected={(slot) => {
-                // Auto-completar formulario cuando se selecciona un slot
+                // Auto-completar formulario cuando se selecciona un slot del calendario
                 setFechaReserva(slot.fecha);
+                // horaInicio/horaFin se setean después de que el useEffect carga los slots
+                // Guardamos los valores para pre-seleccionar el slot correcto
                 setHoraInicio(slot.hora_inicio);
                 setHoraFin(slot.hora_fin);
 
@@ -491,37 +522,34 @@ export default function CanchaDetailsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="hora-inicio">Hora de inicio *</Label>
-                  <Input
-                    id="hora-inicio"
-                    type="time"
-                    step={(cancha.intervalo_reserva_minutos || 60) * 60}
-                    value={horaInicio}
-                    onChange={(e) => setHoraInicio(e.target.value)}
-                    required
-                      className="cursor-pointer"
-                      onFocus={(e) =>
-                        e.target.showPicker && e.target.showPicker()
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="hora-fin">Hora de fin *</Label>
-                  <Input
-                    id="hora-fin"
-                    type="time"
-                    step={(cancha.intervalo_reserva_minutos || 60) * 60}
-                    value={horaFin}
-                    onChange={(e) => setHoraFin(e.target.value)}
-                    required
-                      className="cursor-pointer"
-                      onFocus={(e) =>
-                        e.target.showPicker && e.target.showPicker()
-                      }
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="slot-selector">Horario disponible *</Label>
+                  {!fechaReserva ? (
+                    <p className="text-sm text-gray-500 mt-1">Seleccioná una fecha primero.</p>
+                  ) : loadingSlots ? (
+                    <p className="text-sm text-gray-500 mt-1">Cargando horarios...</p>
+                  ) : slotsDisponibles.length === 0 ? (
+                    <p className="text-sm text-red-500 mt-1">No hay horarios disponibles para esta fecha.</p>
+                  ) : (
+                    <select
+                      id="slot-selector"
+                      className="w-full mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={horaInicio ? `${horaInicio}|${horaFin}` : ""}
+                      onChange={(e) => {
+                        const [inicio, fin] = e.target.value.split("|");
+                        setHoraInicio(inicio || "");
+                        setHoraFin(fin || "");
+                      }}
+                      required
+                    >
+                      <option value="">-- Elegí un horario --</option>
+                      {slotsDisponibles.map((slot) => (
+                        <option key={slot.hora_inicio} value={`${slot.hora_inicio}|${slot.hora_fin}`}>
+                          {slot.hora_inicio} – {slot.hora_fin} ({slot.duracion_minutos} min) — {formatPrice(slot.precio_total)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Método de pago */}
