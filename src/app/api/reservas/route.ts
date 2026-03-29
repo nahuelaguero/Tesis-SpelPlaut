@@ -257,7 +257,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const openingMinutes = timeToMinutes(cancha.horario_apertura);
     const closingMinutes = timeToMinutes(cancha.horario_cierre);
     if (startMinutes < openingMinutes || endMinutes > closingMinutes) {
       return NextResponse.json<ApiResponse>(

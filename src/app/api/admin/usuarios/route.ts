@@ -121,3 +121,59 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json<ApiResponse>({ success: false, message: "Error interno del servidor." }, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const token = request.cookies.get("auth-token")?.value;
+    if (!token) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "No autenticado." }, { status: 401 });
+    }
+
+    let decoded: { userId: string; rol: string };
+    try {
+      decoded = verify(token, process.env.JWT_SECRET || "secret") as { userId: string; rol: string };
+    } catch {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Token inválido." }, { status: 401 });
+    }
+
+    if (decoded.rol !== "admin") {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Solo administradores." }, { status: 403 });
+    }
+
+    const { usuario_id, nombre_completo, email, telefono } = await request.json();
+
+    if (!usuario_id || !isValidObjectId(usuario_id)) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "ID de usuario inválido." }, { status: 400 });
+    }
+
+    const updateData: Record<string, string> = {};
+    if (nombre_completo?.trim()) updateData.nombre_completo = nombre_completo.trim();
+    if (email?.trim()) updateData.email = email.trim().toLowerCase();
+    if (telefono?.trim()) updateData.telefono = telefono.trim();
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "No hay datos para actualizar." }, { status: 400 });
+    }
+
+    const updated = await Usuario.findByIdAndUpdate(
+      usuario_id,
+      updateData,
+      { new: true }
+    ).select("-contrasena_hash");
+
+    if (!updated) {
+      return NextResponse.json<ApiResponse>({ success: false, message: "Usuario no encontrado." }, { status: 404 });
+    }
+
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      message: "Usuario actualizado exitosamente.",
+      data: { usuario: updated },
+    });
+  } catch (error) {
+    console.error("Error actualizando usuario:", error);
+    return NextResponse.json<ApiResponse>({ success: false, message: "Error interno del servidor." }, { status: 500 });
+  }
+}

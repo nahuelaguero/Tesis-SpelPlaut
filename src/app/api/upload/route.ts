@@ -46,7 +46,8 @@ function buildPublicUrl(key: string) {
     return `${process.env.AWS_S3_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`;
   }
 
-  return `https://${getBucketName()}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  // Use internal proxy so images work even with private S3 buckets
+  return `/api/images?key=${encodeURIComponent(key)}`;
 }
 
 function extractKey(value: string) {

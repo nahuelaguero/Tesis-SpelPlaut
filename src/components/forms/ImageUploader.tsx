@@ -9,6 +9,12 @@ interface ImageUploaderProps {
   currentImages?: string[];
 }
 
+function toDisplayUrl(url: string): string {
+  if (!url || url.startsWith("/")) return url;
+  // Convert direct S3 URLs to internal proxy so private buckets work
+  return `/api/images?key=${encodeURIComponent(url)}`;
+}
+
 export function ImageUploader({
   onImagesChange,
   maxImages = 5,
@@ -192,7 +198,7 @@ export function ImageUploader({
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={image}
+                    src={toDisplayUrl(image)}
                     alt={`Imagen de cancha ${index + 1}`}
                     className="h-full w-full object-cover"
                   />

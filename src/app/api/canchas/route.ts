@@ -38,9 +38,17 @@ export async function GET() {
       resenasMap[r._id.toString()] = { promedio: Math.round(r.promedio * 10) / 10, total: r.total };
     }
 
+    // Convert raw S3 URL to internal proxy URL so private buckets work
+    const toProxyUrl = (url: string): string => {
+      if (!url || url.startsWith("/")) return url;
+      return `/api/images?key=${encodeURIComponent(url)}`;
+    };
+
     // Mapear los campos de la base de datos al formato esperado por el frontend
     const canchas = canchasFromDB.map((cancha) => {
       const stats = resenasMap[(cancha._id as { toString(): string }).toString()];
+      const rawImages: string[] = cancha.imagenes || [];
+      const proxyImages = rawImages.map(toProxyUrl);
       return {
         _id: cancha._id,
         nombre: cancha.nombre,
@@ -54,13 +62,13 @@ export async function GET() {
         capacidad_maxima: Number(cancha.capacidad_jugadores) || 0,
         disponible: cancha.disponible,
         descripcion: cancha.descripcion,
-        servicios: cancha.imagenes || [],
-        imagenes: cancha.imagenes || [],
+        servicios: [],
+        imagenes: proxyImages,
         horario_apertura: cancha.horario_apertura,
         horario_cierre: cancha.horario_cierre,
         intervalo_reserva_minutos: cancha.intervalo_reserva_minutos || 60,
         aprobacion_automatica: cancha.aprobacion_automatica !== false,
-        imagen_url: cancha.imagenes?.[0] || "/api/placeholder/600/400",
+        imagen_url: proxyImages[0] || null,
         valoracion: stats?.promedio ?? null,
         total_resenas: stats?.total ?? 0,
       };

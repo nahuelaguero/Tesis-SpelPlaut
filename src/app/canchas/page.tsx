@@ -26,7 +26,9 @@ interface Cancha {
   horario_apertura: string;
   horario_cierre: string;
   imagen_url?: string;
+  imagenes?: string[];
   valoracion?: number;
+  total_resenas?: number;
 }
 
 export default function CanchasPage() {
@@ -96,46 +98,6 @@ export default function CanchasPage() {
     const tipos = [...new Set(canchas.map((cancha) => cancha.tipo))];
     return ["Todos los Deportes", ...tipos];
   }, [canchas]);
-
-  // Solo bloquear a propietarios de cancha (admins pueden ver todo)
-  if (!loading && user && user.rol === "propietario_cancha") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="mb-6">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Acceso Restringido
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Los propietarios de cancha no pueden hacer reservas. Solo pueden
-            gestionar su propia cancha.
-          </p>
-          <Button
-            onClick={() => (window.location.href = "/mi-cancha")}
-            className="w-full"
-          >
-            Ir a Mi Cancha
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   if (loading || loadingCanchas) {
     return (
@@ -354,11 +316,13 @@ export default function CanchasPage() {
                     horario_apertura: cancha.horario_apertura,
                     horario_cierre: cancha.horario_cierre,
                     disponible: cancha.disponible,
-                    calificacion_promedio: cancha.valoracion,
-                    total_reviews: undefined,
-                    imagenes: cancha.imagen_url
-                      ? [cancha.imagen_url]
-                      : ["/api/placeholder/600/400"],
+                    calificacion_promedio: cancha.valoracion ?? undefined,
+                    total_reviews: cancha.total_resenas || undefined,
+                    imagenes: cancha.imagenes?.length
+                      ? cancha.imagenes
+                      : cancha.imagen_url
+                        ? [cancha.imagen_url]
+                        : [],
                     // Coordenadas simuladas para Loma Plata
                     coordenadas: {
                       latitude: baseLatitude + randomOffset(),

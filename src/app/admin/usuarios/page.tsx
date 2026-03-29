@@ -22,6 +22,8 @@ import {
   Edit,
   Shield,
   User,
+  Save,
+  X,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 
@@ -34,6 +36,13 @@ interface Usuario {
   fecha_registro: string;
 }
 
+interface EditingUser {
+  _id: string;
+  nombre_completo: string;
+  email: string;
+  telefono: string;
+}
+
 export default function AdminUsuariosPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -41,6 +50,8 @@ export default function AdminUsuariosPage() {
   const [loadingUsuarios, setLoadingUsuarios] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState("");
+  const [editingUser, setEditingUser] = useState<EditingUser | null>(null);
+  const [savingUser, setSavingUser] = useState(false);
 
   // Verificar permisos
   useEffect(() => {
@@ -99,6 +110,43 @@ export default function AdminUsuariosPage() {
     } catch (error) {
       console.error("Error:", error);
       setMessage("Error al actualizar rol.");
+    }
+  };
+
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+    setSavingUser(true);
+    try {
+      const response = await fetch("/api/admin/usuarios", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          usuario_id: editingUser._id,
+          nombre_completo: editingUser.nombre_completo,
+          email: editingUser.email,
+          telefono: editingUser.telefono,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsuarios((prev) =>
+          prev.map((u) =>
+            u._id === editingUser._id
+              ? { ...u, nombre_completo: editingUser.nombre_completo, email: editingUser.email, telefono: editingUser.telefono }
+              : u
+          )
+        );
+        setMessage("Usuario actualizado exitosamente.");
+        setEditingUser(null);
+      } else {
+        setMessage(data.message || "Error al actualizar usuario.");
+      }
+      setTimeout(() => setMessage(""), 3000);
+    } catch {
+      setMessage("Error al actualizar usuario.");
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -292,36 +340,100 @@ export default function AdminUsuariosPage() {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <span className="font-medium mr-2">Teléfono:</span>
-                    {usuario.telefono}
+                {editingUser?._id === usuario._id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
+                      <Input
+                        value={editingUser.nombre_completo}
+                        onChange={(e) => setEditingUser({ ...editingUser, nombre_completo: e.target.value })}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                      <Input
+                        type="email"
+                        value={editingUser.email}
+                        onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Teléfono</label>
+                      <Input
+                        value={editingUser.telefono}
+                        onChange={(e) => setEditingUser({ ...editingUser, telefono: e.target.value })}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        onClick={() => void handleSaveUser()}
+                        disabled={savingUser}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        {savingUser ? "Guardando..." : "Guardar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingUser(null)}
+                        disabled={savingUser}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="font-medium mr-2">Teléfono:</span>
+                      {usuario.telefono}
+                    </div>
 
-                  <div className="flex items-center text-sm text-gray-600">
-                    <span className="font-medium mr-2">Registro:</span>
-                    {formatDate(usuario.fecha_registro)}
-                  </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="font-medium mr-2">Registro:</span>
+                      {formatDate(usuario.fecha_registro)}
+                    </div>
 
-                  <div className="pt-4 border-t border-gray-200">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cambiar Rol:
-                    </label>
-                    <select
-                      value={usuario.rol}
-                      onChange={(e) =>
-                        handleRoleChange(usuario._id, e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingUser({
+                        _id: usuario._id,
+                        nombre_completo: usuario.nombre_completo,
+                        email: usuario.email,
+                        telefono: usuario.telefono,
+                      })}
+                      className="w-full text-xs"
                     >
-                      <option value="usuario">Usuario</option>
-                      <option value="propietario_cancha">
-                        Propietario de Cancha
-                      </option>
-                      <option value="admin">Administrador</option>
-                    </select>
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar datos
+                    </Button>
+
+                    <div className="pt-2 border-t border-gray-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Cambiar Rol:
+                      </label>
+                      <select
+                        value={usuario.rol}
+                        onChange={(e) =>
+                          handleRoleChange(usuario._id, e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      >
+                        <option value="usuario">Usuario</option>
+                        <option value="propietario_cancha">
+                          Propietario de Cancha
+                        </option>
+                        <option value="admin">Administrador</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))}
