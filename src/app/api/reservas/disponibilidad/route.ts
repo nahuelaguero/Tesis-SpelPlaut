@@ -3,7 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
 import Cancha from "@/models/Cancha";
 import { isValidObjectId } from "@/lib/auth";
-import { ApiResponse } from "@/types";
+import { ApiResponse, type Cancha as CanchaDoc } from "@/types";
 import {
   calculateReservationPrice,
   getDayName,
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const cancha = await Cancha.findById(cancha_id).lean();
+    const cancha = await Cancha.findById(cancha_id).lean() as unknown as CanchaDoc | null;
     if (!cancha) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "Cancha no encontrada" },
