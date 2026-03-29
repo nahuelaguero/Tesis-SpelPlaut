@@ -119,7 +119,17 @@ export async function PUT(request: NextRequest) {
     const reservation = await Reserva.findById(reserva_id)
       .populate("cancha_id", "nombre propietario_id")
       .populate("usuario_id", "nombre_completo email")
-      .lean();
+      .lean() as {
+        _id: { toString(): string };
+        estado: string;
+        fecha: string;
+        hora_inicio: string;
+        hora_fin: string;
+        precio_total: number;
+        metodo_pago?: string;
+        cancha_id: { _id: string; nombre: string; propietario_id: string };
+        usuario_id: { nombre_completo: string; email: string };
+      } | null;
 
     if (!reservation) {
       return NextResponse.json<ApiResponse>(
