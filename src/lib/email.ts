@@ -582,6 +582,163 @@ export const sendPasswordResetEmail = async (
   });
 };
 
+export const sendReservationPendingApproval = async (
+  userEmail: string,
+  userName: string,
+  reservationData: {
+    canchaName: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    precio: number;
+    reservaId: string;
+  }
+) => {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("es-PY", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("es-PY", {
+      style: "currency",
+      currency: "PYG",
+      minimumFractionDigits: 0,
+    }).format(price);
+
+  const content = `
+    <h2>Reserva Recibida ⏳</h2>
+    <p>Hola <strong>${userName}</strong>,</p>
+    <p>Tu solicitud de reserva fue registrada y ahora está <strong>pendiente de aprobación</strong> por parte del propietario.</p>
+    <div class="info-box">
+        <p><strong>Cancha:</strong> ${reservationData.canchaName}</p>
+        <p><strong>Fecha:</strong> ${formatDate(reservationData.fecha)}</p>
+        <p><strong>Horario:</strong> ${reservationData.horaInicio} - ${reservationData.horaFin}</p>
+        <p><strong>Precio estimado:</strong> ${formatPrice(reservationData.precio)}</p>
+        <p><strong>ID de Reserva:</strong> <code>${reservationData.reservaId}</code></p>
+    </div>
+    <p>Te avisaremos por email cuando el propietario la apruebe o rechace.</p>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject: `Reserva pendiente de aprobación - ${reservationData.canchaName}`,
+    html: getBaseTemplate(content, "Reserva Pendiente"),
+    text: `Reserva pendiente de aprobación\n\nHola ${userName}, tu reserva para ${reservationData.canchaName} el ${formatDate(
+      reservationData.fecha
+    )} de ${reservationData.horaInicio} a ${
+      reservationData.horaFin
+    } quedó pendiente de aprobación.`,
+  });
+};
+
+export const sendOwnerReservationPendingApproval = async (
+  ownerEmail: string,
+  ownerName: string,
+  reservationData: {
+    canchaName: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    precio: number;
+    reservaId: string;
+    customerName: string;
+    customerEmail: string;
+  }
+) => {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("es-PY", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("es-PY", {
+      style: "currency",
+      currency: "PYG",
+      minimumFractionDigits: 0,
+    }).format(price);
+
+  const content = `
+    <h2>Nueva reserva pendiente 🏟️</h2>
+    <p>Hola <strong>${ownerName}</strong>,</p>
+    <p>Tienes una nueva reserva que requiere tu aprobación manual.</p>
+    <div class="info-box">
+        <p><strong>Cancha:</strong> ${reservationData.canchaName}</p>
+        <p><strong>Fecha:</strong> ${formatDate(reservationData.fecha)}</p>
+        <p><strong>Horario:</strong> ${reservationData.horaInicio} - ${reservationData.horaFin}</p>
+        <p><strong>Precio:</strong> ${formatPrice(reservationData.precio)}</p>
+        <p><strong>Cliente:</strong> ${reservationData.customerName}</p>
+        <p><strong>Email cliente:</strong> ${reservationData.customerEmail}</p>
+        <p><strong>ID de Reserva:</strong> <code>${reservationData.reservaId}</code></p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: ownerEmail,
+    subject: `Reserva pendiente para aprobar - ${reservationData.canchaName}`,
+    html: getBaseTemplate(content, "Reserva Pendiente para Aprobar"),
+    text: `Nueva reserva pendiente\n\n${reservationData.customerName} solicitó ${reservationData.canchaName} el ${formatDate(
+      reservationData.fecha
+    )} de ${reservationData.horaInicio} a ${reservationData.horaFin}.`,
+  });
+};
+
+export const sendReservationRejected = async (
+  userEmail: string,
+  userName: string,
+  reservationData: {
+    canchaName: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    motivo?: string;
+  }
+) => {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("es-PY", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  const content = `
+    <h2>Reserva rechazada</h2>
+    <p>Hola <strong>${userName}</strong>,</p>
+    <p>El propietario rechazó tu solicitud de reserva.</p>
+    <div class="warning-box">
+        <p><strong>Cancha:</strong> ${reservationData.canchaName}</p>
+        <p><strong>Fecha:</strong> ${formatDate(reservationData.fecha)}</p>
+        <p><strong>Horario:</strong> ${reservationData.horaInicio} - ${reservationData.horaFin}</p>
+        ${
+          reservationData.motivo
+            ? `<p><strong>Motivo:</strong> ${reservationData.motivo}</p>`
+            : ""
+        }
+    </div>
+    <p>Puedes intentar con otro horario desde la app.</p>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject: `Reserva rechazada - ${reservationData.canchaName}`,
+    html: getBaseTemplate(content, "Reserva Rechazada"),
+    text: `Reserva rechazada\n\nHola ${userName}, tu solicitud para ${
+      reservationData.canchaName
+    } el ${formatDate(reservationData.fecha)} de ${
+      reservationData.horaInicio
+    } a ${reservationData.horaFin} fue rechazada.${
+      reservationData.motivo ? ` Motivo: ${reservationData.motivo}` : ""
+    }`,
+  });
+};
+
 export const send2FAEmail = async (
   userEmail: string,
   userName: string,

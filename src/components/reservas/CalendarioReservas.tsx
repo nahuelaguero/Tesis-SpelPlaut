@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading";
 import {
+  AlertCircle,
   Calendar,
-  Clock,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Plus,
-  AlertCircle,
 } from "lucide-react";
+import { timeToMinutes } from "@/lib/pricing";
 
 interface ReservaCreada {
   _id: string;
@@ -35,20 +36,28 @@ interface CalendarioReservasProps {
 
 interface TimeSlot {
   hora_inicio: string;
+  hora_fin: string;
   disponible: boolean;
   estado?: string;
-  precio?: number;
+  precio: number;
 }
 
 interface DisponibilidadData {
   fecha: string;
   cancha_id: string;
   duracion_reserva: number;
+  intervalo_reserva_minutos: number;
   horario_operacion: {
     apertura: string;
     cierre: string;
   };
   horarios_disponibles: string[];
+  horarios_disponibles_detalle: Array<{
+    hora_inicio: string;
+    hora_fin: string;
+    precio_total: number;
+    duracion_minutos: number;
+  }>;
   horarios_ocupados: Array<{
     hora_inicio: string;
     hora_fin: string;
@@ -59,57 +68,84 @@ interface DisponibilidadData {
   dia_actual: string;
 }
 
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("es-PY", {
+    style: "currency",
+    currency: "PYG",
+    minimumFractionDigits: 0,
+  }).format(price);
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("es-PY", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function minutesToTime(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${mins
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export function CalendarioReservas({
   canchaId,
   onSlotSelected,
 }: CalendarioReservasProps) {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(() => {
-    const hoy = new Date();
-    // Agregar un día para evitar problemas de zona horaria
-    hoy.setDate(hoy.getDate() + 1);
-    const año = hoy.getFullYear();
-    const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-    const dia = String(hoy.getDate()).padStart(2, "0");
-    return `${año}-${mes}-${dia}`;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   });
   const [disponibilidad, setDisponibilidad] =
     useState<DisponibilidadData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
 
-  // Cargar disponibilidad cuando cambia la fecha
   useEffect(() => {
     if (fechaSeleccionada && canchaId) {
-      cargarDisponibilidad();
+      void cargarDisponibilidad();
     }
-  }, [fechaSeleccionada, canchaId]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fechaSeleccionada, canchaId]);
 
   const cargarDisponibilidad = async () => {
     setLoading(true);
     setError(null);
+    setSelectedSlot(null);
 
     try {
       const response = await fetch(
-        `/api/reservas/disponibilidad?cancha_id=${canchaId}&fecha=${fechaSeleccionada}&duracion=60`
+        `/api/reservas/disponibilidad?cancha_id=${canchaId}&fecha=${fechaSeleccionada}`
       );
-
       const data = await response.json();
 
-      if (data.success) {
-        setDisponibilidad(data.data.disponibilidad);
-      } else {
-        setError(data.message || "Error al cargar disponibilidad");
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Error al cargar disponibilidad");
       }
-    } catch {
-      setError("Error de conexión al cargar disponibilidad");
+
+      setDisponibilidad(data.data.disponibilidad);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Error de conexión al cargar disponibilidad"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const cambiarFecha = (direccion: "anterior" | "siguiente") => {
-    const fecha = new Date(fechaSeleccionada);
+    const fecha = new Date(`${fechaSeleccionada}T00:00:00`);
 
     if (direccion === "anterior") {
       fecha.setDate(fecha.getDate() - 1);
@@ -117,68 +153,47 @@ export function CalendarioReservas({
       fecha.setDate(fecha.getDate() + 1);
     }
 
-    // No permitir fechas pasadas
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    fecha.setHours(0, 0, 0, 0);
 
     if (fecha >= hoy) {
-      const año = fecha.getFullYear();
-      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-      const dia = String(fecha.getDate()).padStart(2, "0");
-      setFechaSeleccionada(`${año}-${mes}-${dia}`);
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, "0");
+      const day = String(fecha.getDate()).padStart(2, "0");
+      setFechaSeleccionada(`${year}-${month}-${day}`);
     }
-  };
-
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString("es-PY", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
   };
 
   const generarTimeSlots = (): TimeSlot[] => {
     if (!disponibilidad) return [];
 
     const slots: TimeSlot[] = [];
-    const horarioApertura = disponibilidad.horario_operacion.apertura;
-    const horarioCierre = disponibilidad.horario_operacion.cierre;
+    const opening = timeToMinutes(disponibilidad.horario_operacion.apertura);
+    const closing = timeToMinutes(disponibilidad.horario_operacion.cierre);
+    const interval = disponibilidad.intervalo_reserva_minutos || 60;
 
-    // Convertir horarios a minutos
-    const timeToMinutes = (time: string) => {
-      const [hours, minutes] = time.split(":").map(Number);
-      return hours * 60 + minutes;
-    };
-
-    const minutesToTime = (minutes: number) => {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return `${hours.toString().padStart(2, "0")}:${mins
-        .toString()
-        .padStart(2, "0")}`;
-    };
-
-    const inicio = timeToMinutes(horarioApertura);
-    const fin = timeToMinutes(horarioCierre);
-
-    // Generar slots de 1 hora
-    for (let time = inicio; time < fin; time += 60) {
-      const horaInicio = minutesToTime(time);
-      const esDisponible =
-        disponibilidad.horarios_disponibles.includes(horaInicio);
-
-      // Buscar si está ocupado
-      const ocupado = disponibilidad.horarios_ocupados.find(
+    for (let minute = opening; minute < closing; minute += interval) {
+      const horaInicio = minutesToTime(minute);
+      const detalleDisponible = disponibilidad.horarios_disponibles_detalle.find(
         (slot) => slot.hora_inicio === horaInicio
       );
+      const ocupado = disponibilidad.horarios_ocupados.find((slot) => {
+        const ocupadoInicio = timeToMinutes(slot.hora_inicio);
+        const ocupadoFin = timeToMinutes(slot.hora_fin);
+        return minute >= ocupadoInicio && minute < ocupadoFin;
+      });
+
+      if (!detalleDisponible && !ocupado) {
+        continue;
+      }
 
       slots.push({
         hora_inicio: horaInicio,
-        disponible: esDisponible,
+        hora_fin:
+          detalleDisponible?.hora_fin || minutesToTime(Math.min(minute + interval, closing)),
+        disponible: Boolean(detalleDisponible),
         estado: ocupado?.estado,
-        precio: disponibilidad.precio_por_hora,
+        precio: detalleDisponible?.precio_total || 0,
       });
     }
 
@@ -186,28 +201,15 @@ export function CalendarioReservas({
   };
 
   const handleSlotClick = (slot: TimeSlot) => {
-    if (slot.disponible) {
-      setSelectedSlot(slot.hora_inicio);
+    if (!slot.disponible) return;
 
-      // Calcular hora de fin (1 hora después)
-      const [hours, minutes] = slot.hora_inicio.split(":").map(Number);
-      const endHours = hours + 1;
-      const hora_fin = `${endHours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}`;
-
-      // Notificar al componente padre
-      if (onSlotSelected && disponibilidad) {
-        onSlotSelected({
-          fecha: fechaSeleccionada,
-          hora_inicio: slot.hora_inicio,
-          hora_fin: hora_fin,
-          precio: disponibilidad.precio_por_hora,
-        });
-      }
-
-      console.log("Slot seleccionado:", slot);
-    }
+    setSelectedSlot(slot);
+    onSlotSelected?.({
+      fecha: fechaSeleccionada,
+      hora_inicio: slot.hora_inicio,
+      hora_fin: slot.hora_fin,
+      precio: slot.precio,
+    });
   };
 
   const getSlotColor = (slot: TimeSlot) => {
@@ -218,19 +220,11 @@ export function CalendarioReservas({
       return "bg-gray-100 text-gray-500 border-gray-200";
     }
 
-    if (selectedSlot === slot.hora_inicio) {
+    if (selectedSlot?.hora_inicio === slot.hora_inicio) {
       return "bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-200";
     }
 
     return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 cursor-pointer";
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("es-PY", {
-      style: "currency",
-      currency: "PYG",
-      minimumFractionDigits: 0,
-    }).format(price);
   };
 
   return (
@@ -238,99 +232,71 @@ export function CalendarioReservas({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-emerald-600" />
-          Disponibilidad y Reservas
+          Disponibilidad y reservas
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Selector de fecha */}
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
             size="sm"
             onClick={() => cambiarFecha("anterior")}
-            disabled={(() => {
-              const hoy = new Date();
-              const año = hoy.getFullYear();
-              const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-              const dia = String(hoy.getDate()).padStart(2, "0");
-              const fechaHoy = `${año}-${mes}-${dia}`;
-              return fechaSeleccionada <= fechaHoy;
-            })()}
+            disabled={fechaSeleccionada <= new Date().toISOString().split("T")[0]}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
           <div className="text-center">
-            <h3 className="font-semibold text-lg text-gray-900">
-              {formatearFecha(fechaSeleccionada)}
+            <h3 className="text-lg font-semibold text-gray-900">
+              {formatDate(fechaSeleccionada)}
             </h3>
             <input
               type="date"
               value={fechaSeleccionada}
-              onChange={(e) => setFechaSeleccionada(e.target.value)}
-              min={(() => {
-                const hoy = new Date();
-                const año = hoy.getFullYear();
-                const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-                const dia = String(hoy.getDate()).padStart(2, "0");
-                return `${año}-${mes}-${dia}`;
-              })()}
-              className="mt-1 px-2 py-1 border rounded text-sm text-gray-700"
+              onChange={(event) => setFechaSeleccionada(event.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              className="mt-1 rounded border px-2 py-1 text-sm text-gray-700"
             />
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => cambiarFecha("siguiente")}
-          >
+          <Button variant="outline" size="sm" onClick={() => cambiarFecha("siguiente")}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Estado de carga */}
         {loading && (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
-            <span className="ml-2 text-gray-700 font-medium">
-              Cargando disponibilidad...
-            </span>
+            <span className="ml-2 text-gray-700">Cargando disponibilidad...</span>
           </div>
         )}
 
-        {/* Error */}
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4">
             <AlertCircle className="h-5 w-5 text-red-600" />
-            <span className="text-red-700 font-medium">{error}</span>
+            <span className="text-red-700">{error}</span>
           </div>
         )}
 
-        {/* Horarios disponibles */}
         {disponibilidad && !loading && !error && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900">
-                Horarios disponibles
-              </h4>
+              <h4 className="font-medium text-gray-900">Horarios disponibles</h4>
               <Badge variant="outline" className="text-emerald-600">
-                {formatPrice(disponibilidad.precio_por_hora)}/hora
+                Intervalo {disponibilidad.intervalo_reserva_minutos} min
               </Badge>
             </div>
 
-            {/* Grid de slots */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {generarTimeSlots().map((slot) => (
                 <button
                   key={slot.hora_inicio}
                   onClick={() => handleSlotClick(slot)}
                   disabled={!slot.disponible}
-                  className={`
-                    p-3 rounded-lg border transition-all duration-200
-                    ${getSlotColor(slot)}
-                    ${!slot.disponible ? "cursor-not-allowed opacity-60" : ""}
-                  `}
+                  className={`rounded-lg border p-3 transition-all duration-200 ${getSlotColor(
+                    slot
+                  )} ${!slot.disponible ? "cursor-not-allowed opacity-60" : ""}`}
                 >
                   <div className="flex items-center justify-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -338,53 +304,48 @@ export function CalendarioReservas({
                       {slot.hora_inicio}
                     </span>
                   </div>
-
-                  {slot.disponible && (
-                    <div className="text-xs mt-1 opacity-75">Disponible</div>
-                  )}
-
-                  {!slot.disponible && slot.estado && (
-                    <div className="text-xs mt-1 opacity-75">
-                      {slot.estado === "confirmada" ? "Ocupado" : "Pendiente"}
-                    </div>
-                  )}
+                  <div className="mt-1 text-xs opacity-75">
+                    {slot.disponible
+                      ? `${formatPrice(slot.precio)}`
+                      : slot.estado === "confirmada"
+                      ? "Ocupado"
+                      : "Pendiente"}
+                  </div>
                 </button>
               ))}
             </div>
 
-            {/* Información adicional */}
             {selectedSlot && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h5 className="font-medium text-emerald-900">
-                      Slot seleccionado: {selectedSlot}
+                      Slot seleccionado: {selectedSlot.hora_inicio} - {selectedSlot.hora_fin}
                     </h5>
                     <p className="text-sm text-emerald-700">
-                      Precio: {formatPrice(disponibilidad.precio_por_hora)}
+                      Precio: {formatPrice(selectedSlot.precio)}
                     </p>
                   </div>
                   <Button className="bg-emerald-600 hover:bg-emerald-700">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="mr-2 h-4 w-4" />
                     Reservar
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Leyenda */}
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-50 border border-green-200 rounded"></div>
-                <span className="text-gray-700 font-medium">Disponible</span>
+                <div className="h-3 w-3 rounded border border-green-200 bg-green-50" />
+                <span className="text-gray-700">Disponible</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                <span className="text-gray-700 font-medium">Ocupado</span>
+                <div className="h-3 w-3 rounded border border-red-200 bg-red-100" />
+                <span className="text-gray-700">Ocupado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded"></div>
-                <span className="text-gray-700 font-medium">Seleccionado</span>
+                <div className="h-3 w-3 rounded border border-emerald-300 bg-emerald-100" />
+                <span className="text-gray-700">Seleccionado</span>
               </div>
             </div>
           </div>

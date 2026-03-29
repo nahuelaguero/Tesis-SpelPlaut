@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, DollarSign, Users, Clock, Building } from "lucide-react";
+import {
+  Building,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  Settings,
+  Users,
+  XCircle,
+} from "lucide-react";
 import { PropietarioDashboard } from "@/types";
 
 export default function MiCanchaPage() {
@@ -20,27 +30,34 @@ export default function MiCanchaPage() {
     useState<PropietarioDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [canchaSeleccionada, setCanchaSeleccionada] = useState<string>("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [canchaSeleccionada, setCanchaSeleccionada] = useState<string>("todas");
+  const [processingReservationId, setProcessingReservationId] = useState("");
 
   const fetchDashboardData = useCallback(async (canchaId?: string) => {
     try {
       setLoading(true);
-      const url = canchaId
-        ? `/api/propietario/dashboard?cancha_id=${canchaId}`
-        : "/api/propietario/dashboard";
+      const url =
+        canchaId && canchaId !== "todas"
+          ? `/api/propietario/dashboard?cancha_id=${canchaId}`
+          : "/api/propietario/dashboard";
 
-      const response = await fetch(url);
+      const response = await fetch(url, { credentials: "include" });
       const data = await response.json();
 
-      if (data.success) {
-        setDashboardData(data.data);
-        setError("");
-      } else {
-        setError(data.message || "Error al cargar datos del dashboard");
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Error al cargar datos del dashboard");
       }
-    } catch (error) {
-      console.error("Error al obtener dashboard:", error);
-      setError("Error de conexión al cargar el dashboard");
+
+      setDashboardData(data.data);
+      setError("");
+    } catch (fetchError) {
+      console.error("Error al obtener dashboard:", fetchError);
+      setError(
+        fetchError instanceof Error
+          ? fetchError.message
+          : "Error al cargar el dashboard"
+      );
     } finally {
       setLoading(false);
     }
@@ -48,16 +65,56 @@ export default function MiCanchaPage() {
 
   useEffect(() => {
     if (user?.rol === "propietario_cancha") {
-      fetchDashboardData();
+      void fetchDashboardData();
     }
   }, [user, fetchDashboardData]);
 
   const handleCanchaChange = (canchaId: string) => {
     setCanchaSeleccionada(canchaId);
-    if (canchaId === "todas") {
-      fetchDashboardData();
-    } else {
-      fetchDashboardData(canchaId);
+    void fetchDashboardData(canchaId);
+  };
+
+  const handleApproval = async (
+    reservaId: string,
+    accion: "aprobar" | "rechazar"
+  ) => {
+    const motivo =
+      accion === "rechazar"
+        ? window.prompt("Motivo del rechazo (opcional):") || ""
+        : "";
+
+    try {
+      setProcessingReservationId(reservaId);
+      setActionMessage("");
+
+      const response = await fetch("/api/reservas/aprobacion", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          reserva_id: reservaId,
+          accion,
+          motivo,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "No se pudo procesar la reserva.");
+      }
+
+      setActionMessage(data.message);
+      await fetchDashboardData(canchaSeleccionada);
+    } catch (approvalError) {
+      setError(
+        approvalError instanceof Error
+          ? approvalError.message
+          : "No se pudo procesar la reserva."
+      );
+    } finally {
+      setProcessingReservationId("");
     }
   };
 
@@ -65,8 +122,8 @@ export default function MiCanchaPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl font-bold text-red-600">Acceso denegado</h1>
+          <p className="mt-2 text-gray-600">
             Solo los propietarios de cancha pueden acceder a esta página.
           </p>
         </div>
@@ -77,10 +134,7 @@ export default function MiCanchaPage() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Cargando dashboard...</p>
-        </div>
+        <div className="text-center text-gray-600">Cargando dashboard...</div>
       </div>
     );
   }
@@ -88,28 +142,15 @@ export default function MiCanchaPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Error</h1>
-          <p className="text-gray-600 mt-2">{error}</p>
-          <Button onClick={() => fetchDashboardData()} className="mt-4">
-            Reintentar
-          </Button>
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-red-700">
+          {error}
         </div>
       </div>
     );
   }
 
   if (!dashboardData) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-600">Sin Datos</h1>
-          <p className="text-gray-600 mt-2">
-            No se encontraron datos del dashboard.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const {
@@ -118,255 +159,240 @@ export default function MiCanchaPage() {
     estadisticas_consolidadas,
     estadisticas_cancha,
     reservas_recientes,
+    reservas_pendientes_aprobacion = [],
   } = dashboardData;
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Mi Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Gestiona tus canchas y visualiza estadísticas
-        </p>
-      </div>
+  const stats = cancha_seleccionada ? estadisticas_cancha : estadisticas_consolidadas;
 
-      {/* Selector de Cancha */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4">
-          <Building className="h-5 w-5 text-gray-600" />
-          <Select value={canchaSeleccionada} onValueChange={handleCanchaChange}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Seleccionar cancha" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">📊 Vista Consolidada</SelectItem>
-              {canchas.map((cancha) => (
-                <SelectItem key={cancha._id} value={cancha._id}>
-                  🏟️ {cancha.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  return (
+    <div className="container mx-auto space-y-6 px-4 py-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Mi Dashboard</h1>
+          <p className="mt-2 text-gray-600">
+            Gestiona disponibilidad, precios y aprobaciones de tus canchas.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <Button asChild variant="outline">
+            <Link href="/mi-cancha/disponibilidad">Bloquear fechas</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/mi-cancha/configuracion">
+              <Settings className="mr-2 h-4 w-4" />
+              Configurar canchas
+            </Link>
+          </Button>
         </div>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Mostrar estadísticas consolidadas o de cancha específica */}
-        {cancha_seleccionada ? (
-          // Estadísticas de cancha específica
-          estadisticas_cancha && (
-            <>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Reservas Hoy
-                  </CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {estadisticas_cancha.reservas_hoy}
-                  </div>
-                </CardContent>
-              </Card>
+      {actionMessage && (
+        <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+          {actionMessage}
+        </div>
+      )}
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Ingresos Mes
-                  </CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${estadisticas_cancha.ingresos_mes.toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Reservas Semana
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {estadisticas_cancha.reservas_semana}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Ocupación Promedio
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {estadisticas_cancha.ocupacion_promedio}%
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )
-        ) : (
-          // Estadísticas consolidadas
-          <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Canchas
-                </CardTitle>
-                <Building className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {estadisticas_consolidadas.total_canchas}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Reservas Hoy
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {estadisticas_consolidadas.reservas_hoy}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Ingresos Mes
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${estadisticas_consolidadas.ingresos_mes.toLocaleString()}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Ocupación Promedio
-                </CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {estadisticas_consolidadas.ocupacion_promedio}%
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+      <div className="flex items-center gap-4">
+        <Building className="h-5 w-5 text-gray-600" />
+        <Select value={canchaSeleccionada} onValueChange={handleCanchaChange}>
+          <SelectTrigger className="w-72">
+            <SelectValue placeholder="Seleccionar cancha" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Vista consolidada</SelectItem>
+            {canchas.map((cancha) => (
+              <SelectItem key={cancha._id} value={cancha._id}>
+                {cancha.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Resumen de Canchas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Lista de Canchas */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Mis Canchas</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reservas hoy</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {canchas.map((cancha) => (
-                <div
-                  key={cancha._id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
+            <div className="text-2xl font-bold">{stats?.reservas_hoy ?? 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reservas semana</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats?.reservas_semana ?? 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ingresos mes</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${(stats?.ingresos_mes ?? 0).toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Ocupación promedio
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats?.ocupacion_promedio ?? 0}%
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <Card className="xl:col-span-1">
+          <CardHeader>
+            <CardTitle>Mis canchas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {canchas.map((cancha) => (
+              <div
+                key={cancha._id}
+                className="rounded-lg border border-gray-200 p-4"
+              >
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-medium">{cancha.nombre}</h3>
-                    <p className="text-sm text-gray-600">
-                      {cancha.tipo_cancha}
-                    </p>
+                    <h3 className="font-medium text-gray-900">{cancha.nombre}</h3>
+                    <p className="text-sm text-gray-600">{cancha.tipo_cancha}</p>
                     <p className="text-sm text-gray-500">{cancha.ubicacion}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      ${cancha.precio_por_hora}/hora
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {cancha.total_reservas} reservas
-                    </p>
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs ${
-                        cancha.disponible
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {cancha.disponible ? "Disponible" : "No disponible"}
-                    </span>
-                  </div>
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs ${
+                      cancha.disponible
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {cancha.disponible ? "Disponible" : "Cerrada"}
+                  </span>
                 </div>
-              ))}
-            </div>
+
+                <div className="mt-3 space-y-1 text-sm text-gray-600">
+                  <p>Precio base: ${cancha.precio_por_hora.toLocaleString()}/h</p>
+                  <p>Intervalo: {cancha.intervalo_reserva_minutos || 60} min</p>
+                  <p>
+                    Confirmación:{" "}
+                    {cancha.aprobacion_automatica ? "Automática" : "Manual"}
+                  </p>
+                  <p>{cancha.total_reservas} reservas acumuladas</p>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
-        {/* Reservas Recientes */}
-        <Card>
+        <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>Reservas Recientes</CardTitle>
+            <CardTitle>Reservas pendientes de aprobación</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {reservas_recientes.length > 0 ? (
-                reservas_recientes.slice(0, 5).map((reserva) => (
-                  <div
-                    key={reserva._id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
+          <CardContent className="space-y-4">
+            {reservas_pendientes_aprobacion.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                No hay reservas pendientes por aprobar.
+              </p>
+            ) : (
+              reservas_pendientes_aprobacion.map((reserva) => (
+                <div
+                  key={reserva._id}
+                  className="rounded-lg border border-amber-200 bg-amber-50 p-4"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <h4 className="font-medium">{reserva.cancha_nombre}</h4>
-                      <p className="text-sm text-gray-600">
-                        {reserva.usuario.nombre_completo}
+                      <h3 className="font-medium text-gray-900">
+                        {reserva.cancha_nombre}
+                      </h3>
+                      <p className="text-sm text-gray-700">
+                        {reserva.usuario.nombre_completo} · {reserva.usuario.email}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {reserva.fecha} - {reserva.hora_inicio}
+                      <p className="text-sm text-gray-600">
+                        {reserva.fecha} · {reserva.hora_inicio} - {reserva.hora_fin}
+                      </p>
+                      <p className="text-sm font-medium text-gray-800">
+                        Total: ${reserva.precio_total.toLocaleString()}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">${reserva.precio_total}</p>
-                      <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          reserva.estado === "confirmada"
-                            ? "bg-green-100 text-green-800"
-                            : reserva.estado === "pendiente"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => void handleApproval(reserva._id, "aprobar")}
+                        disabled={processingReservationId === reserva._id}
                       >
-                        {reserva.estado}
-                      </span>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Aprobar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => void handleApproval(reserva._id, "rechazar")}
+                        disabled={processingReservationId === reserva._id}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Rechazar
+                      </Button>
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-4">
-                  No hay reservas recientes
-                </p>
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Reservas recientes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {reservas_recientes.length === 0 ? (
+            <p className="text-sm text-gray-500">No hay reservas recientes.</p>
+          ) : (
+            reservas_recientes.slice(0, 6).map((reserva) => (
+              <div
+                key={reserva._id}
+                className="flex items-center justify-between rounded-lg border border-gray-200 p-4"
+              >
+                <div>
+                  <h4 className="font-medium text-gray-900">
+                    {reserva.cancha_nombre}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {reserva.usuario.nombre_completo}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {reserva.fecha} · {reserva.hora_inicio} - {reserva.hora_fin}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">${reserva.precio_total}</p>
+                  <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                    {reserva.estado}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

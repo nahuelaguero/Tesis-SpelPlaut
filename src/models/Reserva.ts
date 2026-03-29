@@ -40,8 +40,46 @@ const ReservaSchema = new Schema<Reserva>(
     },
     estado: {
       type: String,
-      enum: ["pendiente", "confirmada", "cancelada", "completada"],
-      default: "pendiente",
+      enum: [
+        "pendiente",
+        "pendiente_aprobacion",
+        "confirmada",
+        "cancelada",
+        "rechazada",
+        "completada",
+      ],
+      default: "pendiente_aprobacion",
+    },
+    metodo_pago: {
+      type: String,
+      default: "efectivo",
+      trim: true,
+    },
+    pagado: {
+      type: Boolean,
+      default: false,
+    },
+    notas: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+    },
+    numero_jugadores: {
+      type: Number,
+      min: 1,
+    },
+    motivo_rechazo: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+    },
+    aprobada_por_propietario: {
+      type: Boolean,
+      default: null,
+    },
+    fecha_decision: {
+      type: Date,
+      default: null,
     },
     fecha_reserva: {
       type: Date,
@@ -61,6 +99,7 @@ ReservaSchema.index({ estado: 1 });
 ReservaSchema.index({ cancha_id: 1, fecha_reserva: 1, estado: 1 });
 // Índice compuesto para verificación de superposición (usa campo fecha string)
 ReservaSchema.index({ cancha_id: 1, fecha: 1, estado: 1 });
+ReservaSchema.index({ cancha_id: 1, estado: 1, createdAt: -1 });
 
 const ReservaModel =
   mongoose.models.Reserva || mongoose.model<Reserva>("Reserva", ReservaSchema);

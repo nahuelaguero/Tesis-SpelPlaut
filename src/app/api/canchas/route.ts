@@ -3,13 +3,16 @@ import connectDB from "@/lib/mongodb";
 import Cancha from "@/models/Cancha";
 import { requireAdmin } from "@/lib/auth";
 import { ApiResponse } from "@/types";
+import { getMinimumPrice } from "@/lib/pricing";
 
 export async function GET() {
   try {
     await connectDB();
 
     const canchasFromDB = await Cancha.find({ disponible: true })
-      .select('nombre descripcion tipo_cancha ubicacion precio_por_hora capacidad_jugadores disponible horario_apertura horario_cierre imagenes')
+      .select(
+        "nombre descripcion tipo_cancha ubicacion precio_por_hora precios_por_horario capacidad_jugadores disponible horario_apertura horario_cierre imagenes intervalo_reserva_minutos aprobacion_automatica"
+      )
       .sort({ createdAt: -1 })
       .lean();
 
@@ -31,12 +34,19 @@ export async function GET() {
         tipo: deporteMap[cancha.tipo_cancha] || cancha.tipo_cancha,
         ubicacion: cancha.ubicacion,
         precio_por_hora: Number(cancha.precio_por_hora) || 0,
+        precio_desde: getMinimumPrice({
+          precio_por_hora: Number(cancha.precio_por_hora) || 0,
+          precios_por_horario: cancha.precios_por_horario || [],
+        }),
         capacidad_maxima: Number(cancha.capacidad_jugadores) || 0,
         disponible: cancha.disponible,
         descripcion: cancha.descripcion,
         servicios: cancha.imagenes || [],
+        imagenes: cancha.imagenes || [],
         horario_apertura: cancha.horario_apertura,
         horario_cierre: cancha.horario_cierre,
+        intervalo_reserva_minutos: cancha.intervalo_reserva_minutos || 60,
+        aprobacion_automatica: cancha.aprobacion_automatica !== false,
         imagen_url: cancha.imagenes?.[0] || "/api/placeholder/600/400",
         valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
       };
@@ -84,21 +94,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       nombre,
-      tipo,
+      descripcion,
+      tipo_cancha,
       ubicacion,
       imagenes,
-      precio_hora,
-      horarios_disponibles,
-      estado = "activo",
+      precio_por_hora,
+      capacidad_jugadores,
+      horario_apertura,
+      horario_cierre,
+      dias_operativos,
+      propietario_id,
+      precios_por_horario,
+      intervalo_reserva_minutos,
+      aprobacion_automatica,
     } = body;
 
     // Validaciones básicas
     if (
       !nombre ||
-      !tipo ||
+      !tipo_cancha ||
       !ubicacion ||
-      !precio_hora ||
-      !horarios_disponibles
+      !precio_por_hora ||
+      !capacidad_jugadores ||
+      !horario_apertura ||
+      !horario_cierre ||
+      !propietario_id
     ) {
       return NextResponse.json<ApiResponse>(
         {
@@ -109,17 +129,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ubicacion.direccion || !ubicacion.ciudad) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "La ubicación debe incluir dirección y ciudad",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (precio_hora <= 0) {
+    if (precio_por_hora <= 0) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -129,24 +139,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (
-      !Array.isArray(horarios_disponibles) ||
-      horarios_disponibles.length === 0
-    ) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Debe especificar al menos un horario disponible",
-        },
-        { status: 400 }
-      );
-    }
-
     // Verificar que no exista una cancha con el mismo nombre en la misma ubicación
     const existingCancha = await Cancha.findOne({
       nombre,
-      "ubicacion.direccion": ubicacion.direccion,
-      "ubicacion.ciudad": ubicacion.ciudad,
+      ubicacion,
     });
 
     if (existingCancha) {
@@ -162,12 +158,19 @@ export async function POST(request: NextRequest) {
     // Crear nueva cancha
     const newCancha = new Cancha({
       nombre,
-      tipo,
+      descripcion: descripcion || "",
+      tipo_cancha,
       ubicacion,
       imagenes: imagenes || [],
-      precio_hora,
-      horarios_disponibles,
-      estado,
+      precio_por_hora,
+      capacidad_jugadores,
+      horario_apertura,
+      horario_cierre,
+      dias_operativos: dias_operativos || ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"],
+      propietario_id,
+      precios_por_horario: precios_por_horario || [],
+      intervalo_reserva_minutos: intervalo_reserva_minutos || 60,
+      aprobacion_automatica: aprobacion_automatica !== false,
     });
 
     await newCancha.save();

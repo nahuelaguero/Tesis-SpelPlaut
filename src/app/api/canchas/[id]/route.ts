@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import Cancha from "@/models/Cancha";
 import { requireAdmin, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
+import { getMinimumPrice } from "@/lib/pricing";
 
 // Función para obtener servicios por tipo de cancha
 function getServiciosPorTipo(tipo: string): string[] {
@@ -87,12 +88,20 @@ export async function GET(
       tipo: tipoMap[canchaFromDB.tipo_cancha] || canchaFromDB.tipo_cancha,
       ubicacion: canchaFromDB.ubicacion,
       precio_por_hora: Number(canchaFromDB.precio_por_hora) || 0,
+      precio_desde: getMinimumPrice({
+        precio_por_hora: Number(canchaFromDB.precio_por_hora) || 0,
+        precios_por_horario: canchaFromDB.precios_por_horario || [],
+      }),
+      precios_por_horario: canchaFromDB.precios_por_horario || [],
       capacidad_maxima: Number(canchaFromDB.capacidad_jugadores) || 0,
       disponible: canchaFromDB.disponible,
       descripcion: canchaFromDB.descripcion,
       servicios: getServiciosPorTipo(canchaFromDB.tipo_cancha),
+      imagenes: canchaFromDB.imagenes || [],
       horario_apertura: canchaFromDB.horario_apertura,
       horario_cierre: canchaFromDB.horario_cierre,
+      intervalo_reserva_minutos: canchaFromDB.intervalo_reserva_minutos || 60,
+      aprobacion_automatica: canchaFromDB.aprobacion_automatica !== false,
       imagen_url: canchaFromDB.imagenes?.[0] || "/api/placeholder/600/400",
       valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
     };
@@ -152,16 +161,23 @@ export async function PUT(
     const body = await request.json();
     const {
       nombre,
-      tipo,
+      descripcion,
+      tipo_cancha,
       ubicacion,
       imagenes,
-      precio_hora,
-      horarios_disponibles,
-      estado,
+      precio_por_hora,
+      capacidad_jugadores,
+      horario_apertura,
+      horario_cierre,
+      dias_operativos,
+      precios_por_horario,
+      intervalo_reserva_minutos,
+      aprobacion_automatica,
+      disponible,
     } = body;
 
     // Validaciones básicas
-    if (nombre && nombre.trim() === "") {
+    if (nombre !== undefined && nombre.trim() === "") {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -171,21 +187,11 @@ export async function PUT(
       );
     }
 
-    if (precio_hora && precio_hora <= 0) {
+    if (precio_por_hora !== undefined && precio_por_hora <= 0) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           message: "El precio por hora debe ser mayor a 0",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (ubicacion && (!ubicacion.direccion || !ubicacion.ciudad)) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "La ubicación debe incluir dirección y ciudad",
         },
         { status: 400 }
       );
@@ -206,16 +212,12 @@ export async function PUT(
     // Si se está cambiando el nombre o ubicación, verificar que no existe otra con esos datos
     if (
       (nombre && nombre !== cancha.nombre) ||
-      (ubicacion &&
-        (ubicacion.direccion !== cancha.ubicacion.direccion ||
-          ubicacion.ciudad !== cancha.ubicacion.ciudad))
+      (ubicacion && ubicacion !== cancha.ubicacion)
     ) {
       const existingCancha = await Cancha.findOne({
         _id: { $ne: id },
         nombre: nombre || cancha.nombre,
-        "ubicacion.direccion":
-          ubicacion?.direccion || cancha.ubicacion.direccion,
-        "ubicacion.ciudad": ubicacion?.ciudad || cancha.ubicacion.ciudad,
+        ubicacion: ubicacion || cancha.ubicacion,
       });
 
       if (existingCancha) {
@@ -229,18 +231,27 @@ export async function PUT(
       }
     }
 
+    // Construir objeto de actualización solo con campos presentes
+    const updateData: Record<string, unknown> = {};
+    if (nombre !== undefined) updateData.nombre = nombre;
+    if (descripcion !== undefined) updateData.descripcion = descripcion;
+    if (tipo_cancha !== undefined) updateData.tipo_cancha = tipo_cancha;
+    if (ubicacion !== undefined) updateData.ubicacion = ubicacion;
+    if (imagenes !== undefined) updateData.imagenes = imagenes;
+    if (precio_por_hora !== undefined) updateData.precio_por_hora = precio_por_hora;
+    if (capacidad_jugadores !== undefined) updateData.capacidad_jugadores = capacidad_jugadores;
+    if (horario_apertura !== undefined) updateData.horario_apertura = horario_apertura;
+    if (horario_cierre !== undefined) updateData.horario_cierre = horario_cierre;
+    if (dias_operativos !== undefined) updateData.dias_operativos = dias_operativos;
+    if (precios_por_horario !== undefined) updateData.precios_por_horario = precios_por_horario;
+    if (intervalo_reserva_minutos !== undefined) updateData.intervalo_reserva_minutos = intervalo_reserva_minutos;
+    if (aprobacion_automatica !== undefined) updateData.aprobacion_automatica = aprobacion_automatica;
+    if (disponible !== undefined) updateData.disponible = disponible;
+
     // Actualizar cancha
     const updatedCancha = await Cancha.findByIdAndUpdate(
       id,
-      {
-        ...(nombre && { nombre }),
-        ...(tipo && { tipo }),
-        ...(ubicacion && { ubicacion }),
-        ...(imagenes && { imagenes }),
-        ...(precio_hora && { precio_hora }),
-        ...(horarios_disponibles && { horarios_disponibles }),
-        ...(estado && { estado }),
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -316,10 +327,10 @@ export async function DELETE(
       );
     }
 
-    // En lugar de eliminar completamente, cambiar estado a 'inactivo'
+    // En lugar de eliminar completamente, marcar como no disponible
     const updatedCancha = await Cancha.findByIdAndUpdate(
       id,
-      { estado: "inactivo" },
+      { disponible: false },
       { new: true }
     );
 

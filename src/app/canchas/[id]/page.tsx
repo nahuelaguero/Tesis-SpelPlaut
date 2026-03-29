@@ -17,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/lib/geolocation";
+import { calculateReservationPrice } from "@/lib/pricing";
+import type { PrecioHorario } from "@/types";
 import PaymentMethods from "@/components/PaymentMethods";
 import { CalendarioReservas } from "@/components/reservas/CalendarioReservas";
 import {
@@ -36,12 +38,17 @@ interface Cancha {
   tipo: string;
   ubicacion: string;
   precio_por_hora: number;
+  precio_desde?: number;
+  precios_por_horario?: PrecioHorario[];
   capacidad_maxima: number;
   disponible: boolean;
   descripcion: string;
   servicios: string[];
+  imagenes?: string[];
   horario_apertura: string;
   horario_cierre: string;
+  intervalo_reserva_minutos?: number;
+  aprobacion_automatica?: boolean;
   imagen_url?: string;
   valoracion?: number;
 }
@@ -157,8 +164,14 @@ export default function CanchaDetailsPage() {
   };
 
   const calculateTotal = () => {
-    if (!cancha) return 0;
-    return calculateDuration() * cancha.precio_por_hora;
+    if (!cancha || !fechaReserva || !horaInicio || !horaFin) return 0;
+
+    return calculateReservationPrice({
+      cancha,
+      fecha: fechaReserva,
+      horaInicio,
+      horaFin,
+    }).total;
   };
 
   const handleReservation = async (e: React.FormEvent) => {
@@ -376,7 +389,7 @@ export default function CanchaDetailsPage() {
                 <div className="flex items-center space-x-2">
                   <DollarSign className="h-5 w-5 text-emerald-600" />
                   <span className="text-gray-700 font-medium">
-                    {formatPrice(cancha.precio_por_hora)}/hora
+                    Desde {formatPrice(cancha.precio_desde || cancha.precio_por_hora)}/hora
                   </span>
                 </div>
               </div>
@@ -481,12 +494,13 @@ export default function CanchaDetailsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="hora-inicio">Hora de inicio *</Label>
-                    <Input
-                      id="hora-inicio"
-                      type="time"
-                      value={horaInicio}
-                      onChange={(e) => setHoraInicio(e.target.value)}
-                      required
+                  <Input
+                    id="hora-inicio"
+                    type="time"
+                    step={(cancha.intervalo_reserva_minutos || 60) * 60}
+                    value={horaInicio}
+                    onChange={(e) => setHoraInicio(e.target.value)}
+                    required
                       className="cursor-pointer"
                       onFocus={(e) =>
                         e.target.showPicker && e.target.showPicker()
@@ -495,12 +509,13 @@ export default function CanchaDetailsPage() {
                   </div>
                   <div>
                     <Label htmlFor="hora-fin">Hora de fin *</Label>
-                    <Input
-                      id="hora-fin"
-                      type="time"
-                      value={horaFin}
-                      onChange={(e) => setHoraFin(e.target.value)}
-                      required
+                  <Input
+                    id="hora-fin"
+                    type="time"
+                    step={(cancha.intervalo_reserva_minutos || 60) * 60}
+                    value={horaFin}
+                    onChange={(e) => setHoraFin(e.target.value)}
+                    required
                       className="cursor-pointer"
                       onFocus={(e) =>
                         e.target.showPicker && e.target.showPicker()
@@ -546,10 +561,19 @@ export default function CanchaDetailsPage() {
                         {calculateDuration() !== 1 ? "s" : ""}
                       </p>
                       <p>
-                        Precio por hora: {formatPrice(cancha.precio_por_hora)}
+                        Precio base: {formatPrice(cancha.precio_por_hora)}
+                      </p>
+                      <p>
+                        Intervalo permitido: {cancha.intervalo_reserva_minutos || 60} minutos
+                      </p>
+                      <p>
+                        Confirmación:{" "}
+                        {cancha.aprobacion_automatica === false
+                          ? "Manual por el propietario"
+                          : "Automática si el horario está libre"}
                       </p>
                       <p className="font-bold text-lg">
-                        Total: {formatPrice(calculateTotal())}
+                        Total estimado: {formatPrice(calculateTotal())}
                       </p>
                     </div>
                   </div>

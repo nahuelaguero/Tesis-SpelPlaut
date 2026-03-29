@@ -1,5 +1,51 @@
 import mongoose from "mongoose";
 import { Cancha } from "@/types";
+import { validatePricingRules } from "@/lib/pricing";
+
+const precioHorarioSchema = new mongoose.Schema(
+  {
+    nombre: {
+      type: String,
+      trim: true,
+    },
+    dias_semana: {
+      type: [String],
+      enum: [
+        "lunes",
+        "martes",
+        "miercoles",
+        "jueves",
+        "viernes",
+        "sabado",
+        "domingo",
+      ],
+      required: true,
+      default: [],
+    },
+    hora_inicio: {
+      type: String,
+      required: true,
+      match: [
+        /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        "Formato de hora inválido (HH:MM)",
+      ],
+    },
+    hora_fin: {
+      type: String,
+      required: true,
+      match: [
+        /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        "Formato de hora inválido (HH:MM)",
+      ],
+    },
+    precio_por_hora: {
+      type: Number,
+      required: true,
+      min: [0, "El precio no puede ser negativo"],
+    },
+  },
+  { _id: true }
+);
 
 const canchaSchema = new mongoose.Schema<Cancha>(
   {
@@ -34,6 +80,24 @@ const canchaSchema = new mongoose.Schema<Cancha>(
       required: [true, "El precio por hora es requerido"],
       min: [0, "El precio no puede ser negativo"],
     },
+    precios_por_horario: {
+      type: [precioHorarioSchema],
+      default: [],
+      validate: {
+        validator: function (
+          this: { intervalo_reserva_minutos?: number },
+          value: Cancha["precios_por_horario"]
+        ) {
+          const validationError = validatePricingRules(
+            value || [],
+            this.intervalo_reserva_minutos
+          );
+          return !validationError;
+        },
+        message:
+          "Las reglas de precios tienen horarios invalidos o se superponen.",
+      },
+    },
     capacidad_jugadores: {
       type: Number,
       required: [true, "La capacidad de jugadores es requerida"],
@@ -54,6 +118,20 @@ const canchaSchema = new mongoose.Schema<Cancha>(
         /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
         "Formato de hora inválido (HH:MM)",
       ],
+    },
+    intervalo_reserva_minutos: {
+      type: Number,
+      default: 60,
+      min: [15, "El intervalo minimo es 15 minutos"],
+      max: [180, "El intervalo maximo es 180 minutos"],
+      validate: {
+        validator: (value: number) => value % 15 === 0,
+        message: "El intervalo de reserva debe ser multiplo de 15 minutos",
+      },
+    },
+    aprobacion_automatica: {
+      type: Boolean,
+      default: true,
     },
     disponible: {
       type: Boolean,
@@ -112,6 +190,7 @@ const canchaSchema = new mongoose.Schema<Cancha>(
 canchaSchema.index({ tipo_cancha: 1, disponible: 1 });
 canchaSchema.index({ ubicacion: 1 });
 canchaSchema.index({ disponible: 1, createdAt: -1 });
+canchaSchema.index({ propietario_id: 1, createdAt: -1 });
 
 export default mongoose.models.Cancha ||
   mongoose.model<Cancha>("Cancha", canchaSchema, "canchas");

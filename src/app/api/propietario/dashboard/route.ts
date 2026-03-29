@@ -5,6 +5,7 @@ import Cancha from "@/models/Cancha";
 import Usuario from "@/models/Usuario";
 import { requireAuth } from "@/lib/auth";
 import { ApiResponse, PropietarioDashboard } from "@/types";
+import { timeToMinutes } from "@/lib/pricing";
 
 interface PopulatedReserva {
   _id: string;
@@ -12,6 +13,7 @@ interface PopulatedReserva {
   hora_inicio: string;
   hora_fin: string;
   precio_total: number;
+  metodo_pago?: string;
   estado: string;
   createdAt: Date;
   duracion_horas: number;
@@ -19,10 +21,10 @@ interface PopulatedReserva {
     _id: string;
     nombre: string;
   };
-  usuario_id: {
-    nombre_completo: string;
-    email: string;
-  };
+    usuario_id: {
+      nombre_completo: string;
+      email: string;
+    };
 }
 
 export async function GET(request: NextRequest) {
@@ -174,9 +176,10 @@ export async function GET(request: NextRequest) {
     let horasOcupadasConsolidadas = 0;
 
     for (const cancha of canchasDelPropietario) {
-      const horasApertura = parseInt(cancha.horario_apertura.split(":")[0]);
-      const horasCierre = parseInt(cancha.horario_cierre.split(":")[0]);
-      const horasPorDia = horasCierre - horasApertura;
+      const horasPorDia =
+        (timeToMinutes(cancha.horario_cierre) -
+          timeToMinutes(cancha.horario_apertura)) /
+        60;
       horasTotales30DiasConsolidadas += horasPorDia * 30;
     }
 
@@ -211,6 +214,9 @@ export async function GET(request: NextRequest) {
           tipo_cancha: cancha.tipo_cancha,
           ubicacion: cancha.ubicacion,
           precio_por_hora: cancha.precio_por_hora,
+          intervalo_reserva_minutos: cancha.intervalo_reserva_minutos,
+          aprobacion_automatica: cancha.aprobacion_automatica !== false,
+          imagen_principal: cancha.imagenes?.[0],
           disponible: cancha.disponible,
           total_reservas: reservasCancha.length,
           ingresos_mes: ingresosMesCancha,
@@ -288,9 +294,10 @@ export async function GET(request: NextRequest) {
           estado: { $in: ["confirmada", "completada"] },
         });
 
-        const horasApertura = parseInt(cancha.horario_apertura.split(":")[0]);
-        const horasCierre = parseInt(cancha.horario_cierre.split(":")[0]);
-        const horasPorDia = horasCierre - horasApertura;
+        const horasPorDia =
+          (timeToMinutes(cancha.horario_cierre) -
+            timeToMinutes(cancha.horario_apertura)) /
+          60;
         const horasTotales30Dias = horasPorDia * 30;
 
         const horasOcupadas = reservasUltimos30DiasCancha.reduce(
@@ -318,6 +325,15 @@ export async function GET(request: NextRequest) {
     // Obtener reservas recientes (últimas 10, de todas las canchas)
     const reservasRecientes = (await Reserva.find({
       cancha_id: { $in: canchaIds },
+    })
+      .populate("usuario_id", "nombre_completo email")
+      .populate("cancha_id", "nombre")
+      .sort({ createdAt: -1 })
+      .limit(10)) as PopulatedReserva[];
+
+    const reservasPendientesAprobacion = (await Reserva.find({
+      cancha_id: { $in: canchaIds },
+      estado: { $in: ["pendiente", "pendiente_aprobacion"] },
     })
       .populate("usuario_id", "nombre_completo email")
       .populate("cancha_id", "nombre")
@@ -352,6 +368,22 @@ export async function GET(request: NextRequest) {
         estado: reserva.estado,
         precio_total: reserva.precio_total,
       })),
+      reservas_pendientes_aprobacion: reservasPendientesAprobacion.map(
+        (reserva) => ({
+          _id: reserva._id.toString(),
+          fecha: reserva.fecha,
+          hora_inicio: reserva.hora_inicio,
+          hora_fin: reserva.hora_fin,
+          cancha_nombre: reserva.cancha_id.nombre,
+          precio_total: reserva.precio_total,
+          metodo_pago: (reserva as PopulatedReserva & { metodo_pago?: string })
+            .metodo_pago,
+          usuario: {
+            nombre_completo: reserva.usuario_id.nombre_completo,
+            email: reserva.usuario_id.email,
+          },
+        })
+      ),
     };
 
     return NextResponse.json<ApiResponse>(

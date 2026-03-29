@@ -1,5 +1,31 @@
 import { ObjectId } from "mongodb";
 
+export type DiaSemana =
+  | "lunes"
+  | "martes"
+  | "miercoles"
+  | "jueves"
+  | "viernes"
+  | "sabado"
+  | "domingo";
+
+export type EstadoReserva =
+  | "pendiente"
+  | "pendiente_aprobacion"
+  | "confirmada"
+  | "cancelada"
+  | "rechazada"
+  | "completada";
+
+export interface PrecioHorario {
+  _id?: ObjectId;
+  nombre?: string;
+  dias_semana: DiaSemana[];
+  hora_inicio: string;
+  hora_fin: string;
+  precio_por_hora: number;
+}
+
 export interface Usuario {
   _id?: ObjectId;
   nombre_completo: string;
@@ -28,11 +54,14 @@ export interface Cancha {
   ubicacion: string;
   imagenes: string[];
   precio_por_hora: number;
+  precios_por_horario?: PrecioHorario[];
   capacidad_jugadores: number;
   horario_apertura: string;
   horario_cierre: string;
+  intervalo_reserva_minutos?: number;
+  aprobacion_automatica?: boolean;
   disponible: boolean;
-  dias_operativos: string[];
+  dias_operativos: DiaSemana[];
   propietario_id: ObjectId;
   disponibilidad?: {
     fecha: string;
@@ -50,7 +79,14 @@ export interface Reserva {
   hora_fin: string;
   duracion_horas: number;
   precio_total: number;
-  estado: "pendiente" | "confirmada" | "cancelada" | "completada";
+  estado: EstadoReserva;
+  metodo_pago?: string;
+  pagado?: boolean;
+  notas?: string;
+  numero_jugadores?: number;
+  motivo_rechazo?: string;
+  aprobada_por_propietario?: boolean;
+  fecha_decision?: Date;
   fecha_reserva: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -103,6 +139,9 @@ export interface PropietarioDashboard {
     tipo_cancha: string;
     ubicacion: string;
     precio_por_hora: number;
+    intervalo_reserva_minutos?: number;
+    aprobacion_automatica?: boolean;
+    imagen_principal?: string;
     disponible: boolean;
     total_reservas: number;
     ingresos_mes: number;
@@ -113,6 +152,9 @@ export interface PropietarioDashboard {
     tipo_cancha: string;
     ubicacion: string;
     precio_por_hora: number;
+    intervalo_reserva_minutos?: number;
+    aprobacion_automatica?: boolean;
+    imagen_principal?: string;
     disponible: boolean;
     total_reservas: number;
     ingresos_mes: number;
@@ -148,5 +190,18 @@ export interface PropietarioDashboard {
     };
     estado: string;
     precio_total: number;
+  }[];
+  reservas_pendientes_aprobacion?: {
+    _id: string;
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    cancha_nombre: string;
+    precio_total: number;
+    metodo_pago?: string;
+    usuario: {
+      nombre_completo: string;
+      email: string;
+    };
   }[];
 }
