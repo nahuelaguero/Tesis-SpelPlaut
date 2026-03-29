@@ -296,7 +296,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (accion === "bloquear") {
-      const existing = cancha.disponibilidad?.find((item) => item.fecha === fecha);
+      const existing = cancha.disponibilidad?.find((item: { fecha: string; disponible: boolean; motivo?: string }) => item.fecha === fecha);
       if (existing) {
         existing.disponible = false;
         existing.motivo = motivo || "Fecha bloqueada";
