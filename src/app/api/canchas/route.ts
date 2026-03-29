@@ -40,7 +40,7 @@ export async function GET() {
 
     // Mapear los campos de la base de datos al formato esperado por el frontend
     const canchas = canchasFromDB.map((cancha) => {
-      const stats = resenasMap[cancha._id.toString()];
+      const stats = resenasMap[(cancha._id as { toString(): string }).toString()];
       return {
         _id: cancha._id,
         nombre: cancha.nombre,
