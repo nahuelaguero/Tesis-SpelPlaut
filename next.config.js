@@ -4,6 +4,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
+  customWorkerSrc: "worker",
 });
 
 /** @type {import('next').NextConfig} */
@@ -11,7 +12,7 @@ const nextConfig = {
   images: {
     domains: ["localhost"],
   },
-  serverExternalPackages: ["mongoose"],
+  serverExternalPackages: ["mongoose", "web-push"],
   turbopack: {
     rules: {
       "*.svg": {

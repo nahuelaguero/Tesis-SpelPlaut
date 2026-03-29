@@ -43,6 +43,11 @@ export interface Usuario {
   fecha_registro: Date;
   reset_password_token?: string;
   reset_password_expires?: Date;
+  push_subscriptions?: {
+    endpoint: string;
+    expirationTime?: number | null;
+    keys: { p256dh: string; auth: string };
+  }[];
   // Eliminado cancha_id - ahora usamos relación inversa (Cancha.propietario_id)
 }
 

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [showLoading, setShowLoading] = useState(false);
+  usePushSubscription(!!user);
 
   // Rutas públicas que no requieren autenticación
   const publicRoutes = [

@@ -64,6 +64,19 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
       type: Date,
       default: null,
     },
+    push_subscriptions: {
+      type: [
+        {
+          endpoint: { type: String, required: true },
+          expirationTime: { type: Number, default: null },
+          keys: {
+            p256dh: { type: String, required: true },
+            auth: { type: String, required: true },
+          },
+        },
+      ],
+      default: [],
+    },
     // Eliminado cancha_id - ahora usamos la relación inversa
     // Las canchas tienen propietario_id que apunta al usuario
   },

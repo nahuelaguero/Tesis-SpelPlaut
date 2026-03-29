@@ -17,6 +17,7 @@ import {
   sendReservationConfirmation,
   sendReservationPendingApproval,
 } from "@/lib/email";
+import { sendPushToUser } from "@/lib/webpush";
 
 function hasTimeConflict(
   start1: string,
@@ -417,28 +418,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    void sendPushToUser(user._id!.toString(), {
+      title: estado === "confirmada" ? "Reserva confirmada ✅" : "Reserva pendiente ⏳",
+      body: `${(nuevaReserva.cancha_id as { nombre: string }).nombre} — ${hora_inicio} a ${hora_fin}`,
+      url: "/",
+      tag: "reserva-creada",
+    }).catch((err) => console.error("Push error:", err));
+
     if (estado === "pendiente_aprobacion") {
       const owner = await Usuario.findById(
         (nuevaReserva.cancha_id as { propietario_id?: string }).propietario_id
       ).lean() as unknown as UsuarioDoc | null;
 
-      if (owner?.email) {
-        void sendOwnerReservationPendingApproval(
-          owner.email,
-          owner.nombre_completo || "Propietario",
-          {
-            canchaName: (nuevaReserva.cancha_id as { nombre: string }).nombre,
-            fecha: selectedDate.toISOString(),
-            horaInicio: hora_inicio,
-            horaFin: hora_fin,
-            precio: priceInfo.total,
-            reservaId: nuevaReserva._id.toString(),
-            customerName: user.nombre_completo || "Usuario",
-            customerEmail: user.email,
-          }
-        ).catch((emailError) => {
-          console.error("Error enviando email al propietario:", emailError);
-        });
+      if (owner) {
+        if (owner.email) {
+          void sendOwnerReservationPendingApproval(
+            owner.email,
+            owner.nombre_completo || "Propietario",
+            {
+              canchaName: (nuevaReserva.cancha_id as { nombre: string }).nombre,
+              fecha: selectedDate.toISOString(),
+              horaInicio: hora_inicio,
+              horaFin: hora_fin,
+              precio: priceInfo.total,
+              reservaId: nuevaReserva._id.toString(),
+              customerName: user.nombre_completo || "Usuario",
+              customerEmail: user.email,
+            }
+          ).catch((emailError) => {
+            console.error("Error enviando email al propietario:", emailError);
+          });
+        }
+        void sendPushToUser(owner._id!.toString(), {
+          title: "Nueva reserva pendiente 🔔",
+          body: `${user.nombre_completo || "Un usuario"} quiere reservar ${hora_inicio}–${hora_fin}`,
+          url: "/mi-cancha",
+          tag: "reserva-pendiente",
+        }).catch((err) => console.error("Push owner error:", err));
       }
     }
 

@@ -8,6 +8,7 @@ import {
   sendReservationConfirmation,
   sendReservationRejected,
 } from "@/lib/email";
+import { sendPushToUser } from "@/lib/webpush";
 
 async function getOwnerCanchas(userId: string) {
   return Cancha.find({ propietario_id: userId }).select("_id nombre").lean();
@@ -128,7 +129,7 @@ export async function PUT(request: NextRequest) {
         precio_total: number;
         metodo_pago?: string;
         cancha_id: { _id: string; nombre: string; propietario_id: string };
-        usuario_id: { nombre_completo: string; email: string };
+        usuario_id: { _id: { toString(): string }; nombre_completo: string; email: string };
       } | null;
 
     if (!reservation) {
@@ -166,10 +167,7 @@ export async function PUT(request: NextRequest) {
       { new: true }
     );
 
-    const customer = reservation.usuario_id as {
-      nombre_completo: string;
-      email: string;
-    };
+    const customer = reservation.usuario_id;
 
     if (customer.email) {
       if (accion === "aprobar") {
@@ -196,6 +194,15 @@ export async function PUT(request: NextRequest) {
         });
       }
     }
+
+    void sendPushToUser(customer._id.toString(), {
+      title: accion === "aprobar" ? "Reserva aprobada ✅" : "Reserva rechazada ❌",
+      body: accion === "aprobar"
+        ? `Tu reserva en ${cancha.nombre} para el ${reservation.fecha} fue aprobada.`
+        : `Tu reserva en ${cancha.nombre} para el ${reservation.fecha} fue rechazada.`,
+      url: "/",
+      tag: "reserva-decision",
+    }).catch((err) => console.error("Push customer error:", err));
 
     return NextResponse.json<ApiResponse>({
       success: true,
