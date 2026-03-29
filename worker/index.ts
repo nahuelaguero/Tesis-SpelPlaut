@@ -1,3 +1,4 @@
+export {};
 declare const self: ServiceWorkerGlobalScope;
 
 self.addEventListener("push", (event: PushEvent) => {
