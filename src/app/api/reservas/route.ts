@@ -210,7 +210,10 @@ export async function POST(request: NextRequest) {
     }
 
     const intervalMinutes = sanitizeInterval(cancha.intervalo_reserva_minutos);
-    if (!isTimeAligned(hora_inicio, intervalMinutes) || !isTimeAligned(hora_fin, intervalMinutes)) {
+    const openingMinutes = timeToMinutes(cancha.horario_apertura);
+    const isAlignedFromOpening = (time: string) =>
+      (timeToMinutes(time) - openingMinutes) % intervalMinutes === 0;
+    if (!isAlignedFromOpening(hora_inicio) || !isAlignedFromOpening(hora_fin)) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
