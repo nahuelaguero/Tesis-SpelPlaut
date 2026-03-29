@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       horario_cierre,
       imagenes,
       disponible = true,
+      propietario_id,
     } = body;
 
     // Validaciones básicas
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
       horario_cierre,
       imagenes: imagenes || ["/api/placeholder/600/400"],
       disponible,
-      propietario_id: admin._id,
+      propietario_id: propietario_id || admin._id,
     });
 
     const canchaGuardada = await nuevaCancha.save();

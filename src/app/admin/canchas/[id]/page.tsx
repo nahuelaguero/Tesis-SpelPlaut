@@ -60,6 +60,8 @@ export default function EditarCanchaPage() {
   const [success, setSuccess] = useState(false);
   const [loadingCancha, setLoadingCancha] = useState(true);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
+  const [propietarioId, setPropietarioId] = useState("");
+  const [propietarios, setPropietarios] = useState<{ _id: string; nombre_completo: string; email: string }[]>([]);
 
   const tiposCancha = [
     { value: "Football11", label: "Fútbol 11" },
@@ -95,6 +97,8 @@ export default function EditarCanchaPage() {
           });
 
           setCurrentImages(cancha.imagenes || []);
+          const ownerId = cancha.propietario_id?._id?.toString() || cancha.propietario_id?.toString() || "";
+          setPropietarioId(ownerId);
         } else {
           setMessage(data.message || "Error al cargar la cancha");
         }
@@ -122,6 +126,17 @@ export default function EditarCanchaPage() {
 
     if (user && user.rol === "admin" && canchaId) {
       loadCancha();
+      fetch("/api/admin/usuarios", { credentials: "include" })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            setPropietarios(
+              (data.data.usuarios as { _id: string; nombre_completo: string; email: string; rol: string }[])
+                .filter((u) => u.rol === "propietario_cancha")
+            );
+          }
+        })
+        .catch(() => {});
     }
   }, [user, loading, router, canchaId, loadCancha]);
 
@@ -195,6 +210,7 @@ export default function EditarCanchaPage() {
         horario_cierre: formData.horario_cierre,
         disponible: formData.disponible,
         imagenes: currentImages,
+        ...(propietarioId ? { propietario_id: propietarioId } : {}),
       };
 
       const response = await fetch(`/api/admin/canchas/${canchaId}`, {
@@ -466,6 +482,24 @@ export default function EditarCanchaPage() {
                     }
                   />
                 </div>
+              </div>
+
+              {/* Propietario */}
+              <div>
+                <Label htmlFor="propietario_id">Propietario de la cancha</Label>
+                <select
+                  id="propietario_id"
+                  value={propietarioId}
+                  onChange={(e) => setPropietarioId(e.target.value)}
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900"
+                >
+                  <option value="">— Sin propietario asignado —</option>
+                  {propietarios.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.nombre_completo} ({p.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Estado de la cancha */}

@@ -51,15 +51,30 @@ export default function NuevaCanchaPage() {
     horario_cierre: "22:00",
   });
   const [imagenes, setImagenes] = useState<string[]>([]);
+  const [propietarioId, setPropietarioId] = useState("");
+  const [propietarios, setPropietarios] = useState<{ _id: string; nombre_completo: string; email: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Verificar permisos
+  // Verificar permisos y cargar propietarios
   useEffect(() => {
     if (!loading && (!user || user.rol !== "admin")) {
       router.push("/");
       return;
+    }
+    if (user?.rol === "admin") {
+      fetch("/api/admin/usuarios", { credentials: "include" })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            setPropietarios(
+              (data.data.usuarios as { _id: string; nombre_completo: string; email: string; rol: string }[])
+                .filter((u) => u.rol === "propietario_cancha")
+            );
+          }
+        })
+        .catch(() => {});
     }
   }, [user, loading, router]);
 
@@ -128,6 +143,7 @@ export default function NuevaCanchaPage() {
         capacidad_jugadores: parseInt(formData.capacidad_jugadores),
         disponible: true,
         imagenes,
+        ...(propietarioId ? { propietario_id: propietarioId } : {}),
       };
 
       const response = await fetch("/api/admin/canchas", {
@@ -286,6 +302,24 @@ export default function NuevaCanchaPage() {
                   rows={3}
                   required
                 />
+              </div>
+
+              {/* Propietario */}
+              <div>
+                <Label htmlFor="propietario_id">Propietario de la cancha</Label>
+                <select
+                  id="propietario_id"
+                  value={propietarioId}
+                  onChange={(e) => setPropietarioId(e.target.value)}
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-900"
+                >
+                  <option value="">— Sin propietario asignado (quedará a cargo del admin) —</option>
+                  {propietarios.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.nombre_completo} ({p.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Tipo de cancha y ubicación */}

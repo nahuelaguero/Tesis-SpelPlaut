@@ -113,6 +113,7 @@ export async function PUT(
       horario_cierre,
       disponible,
       imagenes,
+      propietario_id,
     } = body;
 
     // Validaciones básicas
@@ -236,6 +237,7 @@ export async function PUT(
       updateData.horario_cierre = horario_cierre;
     if (disponible !== undefined) updateData.disponible = disponible;
     if (imagenes !== undefined) updateData.imagenes = imagenes;
+    if (propietario_id !== undefined) updateData.propietario_id = propietario_id;
 
     // Actualizar la cancha
     const canchaActualizada = await Cancha.findByIdAndUpdate(id, updateData, {
