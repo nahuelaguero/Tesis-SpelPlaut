@@ -6,7 +6,7 @@ import {
   SearchFilters,
   CanchaConDistancia,
   geocodeAddress,
-} from "@/lib/geolocation";
+} from "@/lib/geolocation-utils";
 import {
   createSuccessResponse,
   createErrorResponse,

@@ -7,7 +7,10 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SpelPlaut - Reserva Canchas en Loma Plata",
+  title: {
+    default: "SpelPlaut - Reserva Canchas en Loma Plata",
+    template: "%s | SpelPlaut",
+  },
   description:
     "SpelPlaut - La app móvil para reservar canchas deportivas en Loma Plata. Spel (jugar) en tu ciudad favorita.",
   manifest: "/manifest.json",
@@ -29,7 +32,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL("https://tesis-spel-plaut.vercel.app"),
   alternates: {
     canonical: "/",
   },
@@ -37,7 +40,7 @@ export const metadata: Metadata = {
     title: "SpelPlaut - Reserva Canchas en Loma Plata",
     description:
       "SpelPlaut - La app móvil para reservar canchas deportivas en Loma Plata. Spel (jugar) en tu ciudad favorita.",
-    url: "http://localhost:3000",
+    url: "https://tesis-spel-plaut.vercel.app",
     siteName: "SpelPlaut",
     locale: "es_PY",
     type: "website",
