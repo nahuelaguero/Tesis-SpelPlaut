@@ -304,33 +304,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const overlappingReservations = await Reserva.find({
-      cancha_id,
-      fecha: fecha_reserva,
-      estado: { $in: ["pendiente", "pendiente_aprobacion", "confirmada"] },
-    })
-      .select("hora_inicio hora_fin")
-      .lean();
-
-    const hasConflict = overlappingReservations.some((reservation) =>
-      hasTimeConflict(
-        hora_inicio,
-        hora_fin,
-        reservation.hora_inicio,
-        reservation.hora_fin
-      )
-    );
-
-    if (hasConflict) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          message: "Ya existe una reserva en el horario seleccionado.",
-        },
-        { status: 409 }
-      );
-    }
-
     const validPaymentMethods = [
       "efectivo",
       "bancard_card",
@@ -359,22 +332,78 @@ export async function POST(request: NextRequest) {
     const duracion_horas = priceInfo.durationMinutes / 60;
     const estado = cancha.aprobacion_automatica === false ? "pendiente_aprobacion" : "confirmada";
 
-    const nuevaReserva = await Reserva.create({
-      cancha_id,
-      usuario_id: user._id,
-      fecha: fecha_reserva,
-      fecha_reserva: selectedDate,
-      hora_inicio,
-      hora_fin,
-      duracion_horas,
-      precio_total: priceInfo.total,
-      metodo_pago: metodo_pago || "efectivo",
-      notas: notas || undefined,
-      numero_jugadores: numero_jugadores ? Number(numero_jugadores) : undefined,
-      pagado: false,
-      aprobada_por_propietario: cancha.aprobacion_automatica !== false,
-      estado,
-    });
+    // Atomic check-and-insert using a MongoDB session to prevent race conditions
+    const session = await Reserva.startSession();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let nuevaReserva: any;
+    try {
+      await session.withTransaction(async () => {
+        const overlappingReservations = await Reserva.find({
+          cancha_id,
+          fecha: fecha_reserva,
+          estado: { $in: ["pendiente", "pendiente_aprobacion", "confirmada"] },
+        })
+          .select("hora_inicio hora_fin")
+          .session(session)
+          .lean();
+
+        const hasConflict = overlappingReservations.some((reservation) =>
+          hasTimeConflict(
+            hora_inicio,
+            hora_fin,
+            reservation.hora_inicio,
+            reservation.hora_fin
+          )
+        );
+
+        if (hasConflict) {
+          throw new Error("CONFLICT");
+        }
+
+        const [created] = await Reserva.create(
+          [
+            {
+              cancha_id,
+              usuario_id: user._id,
+              fecha: fecha_reserva,
+              fecha_reserva: selectedDate,
+              hora_inicio,
+              hora_fin,
+              duracion_horas,
+              precio_total: priceInfo.total,
+              metodo_pago: metodo_pago || "efectivo",
+              notas: notas || undefined,
+              numero_jugadores: numero_jugadores ? Number(numero_jugadores) : undefined,
+              pagado: false,
+              aprobada_por_propietario: cancha.aprobacion_automatica !== false,
+              estado,
+            },
+          ],
+          { session }
+        );
+        nuevaReserva = created;
+      });
+    } catch (txError) {
+      if (txError instanceof Error && txError.message === "CONFLICT") {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            message: "Ya existe una reserva en el horario seleccionado.",
+          },
+          { status: 409 }
+        );
+      }
+      throw txError;
+    } finally {
+      await session.endSession();
+    }
+
+    if (!nuevaReserva) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, message: "Error al crear la reserva." },
+        { status: 500 }
+      );
+    }
 
     await nuevaReserva.populate([
       { path: "cancha_id", select: "nombre tipo_cancha ubicacion propietario_id" },

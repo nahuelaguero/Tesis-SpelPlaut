@@ -70,11 +70,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Strip HTML tags to prevent stored XSS
+    const sanitizedComment = (comentario?.trim().slice(0, 500) || "").replace(/<[^>]*>/g, "");
+
     const resena = await Resena.findOneAndUpdate(
       { usuario_id: auth.userId, cancha_id },
       {
         calificacion: cal,
-        comentario: comentario?.trim().slice(0, 500) || "",
+        comentario: sanitizedComment,
       },
       { upsert: true, new: true }
     ).populate("usuario_id", "nombre_completo");
