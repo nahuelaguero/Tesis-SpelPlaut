@@ -64,15 +64,16 @@ interface Reserva {
     nombre_completo: string;
     email: string;
   };
+  fecha: string; // YYYY-MM-DD string
   fecha_reserva: string;
   hora_inicio: string;
   hora_fin: string;
   duracion_horas: number;
   precio_total: number;
-  estado: "confirmada" | "pendiente" | "cancelada";
+  estado: "confirmada" | "pendiente" | "pendiente_aprobacion" | "cancelada";
   metodo_pago?: string;
   pagado: boolean;
-  createdAt: string; // Usar createdAt en lugar de fecha_creacion
+  createdAt: string;
   notas?: string;
 }
 
@@ -162,9 +163,7 @@ export default function MisReservasPage() {
 
   const openEditDialog = (reserva: Reserva) => {
     setEditingReserva(reserva);
-    const fechaISO = new Date(reserva.fecha_reserva)
-      .toISOString()
-      .split("T")[0];
+    const fechaISO = getReservaDateString(reserva);
     setEditForm({
       fecha_reserva: fechaISO,
       hora_inicio: reserva.hora_inicio,
@@ -284,6 +283,7 @@ export default function MisReservasPage() {
           ? "bg-emerald-100 text-emerald-800"
           : "bg-blue-100 text-blue-800";
       case "pendiente":
+      case "pendiente_aprobacion":
         return "bg-yellow-100 text-yellow-800";
       case "cancelada":
         return "bg-red-100 text-red-800";
@@ -296,19 +296,25 @@ export default function MisReservasPage() {
     if (estado === "confirmada" && pagado) return "Confirmada y Pagada";
     if (estado === "confirmada" && !pagado) return "Confirmada";
     if (estado === "pendiente") return "Pendiente";
+    if (estado === "pendiente_aprobacion") return "Pendiente de Aprobación";
     if (estado === "cancelada") return "Cancelada";
     return estado;
+  };
+
+  const getReservaDateString = (reserva: Reserva): string => {
+    // Use the YYYY-MM-DD string field, fallback to parsing fecha_reserva
+    if (reserva.fecha && /^\d{4}-\d{2}-\d{2}$/.test(reserva.fecha)) return reserva.fecha;
+    return reserva.fecha_reserva?.slice(0, 10) || "";
   };
 
   const canCancelReservation = (reserva: Reserva) => {
     if (reserva.estado === "cancelada") return false;
     if (reserva.estado === "confirmada" && reserva.pagado) return false;
 
-    // No cancelar si la reserva es en las próximas 2 horas
+    const dateStr = getReservaDateString(reserva);
+    if (!dateStr) return false;
     const now = new Date();
-    const reservaDateTime = new Date(
-      `${reserva.fecha_reserva}T${reserva.hora_inicio}`
-    );
+    const reservaDateTime = new Date(`${dateStr}T${reserva.hora_inicio}`);
     const timeDiff = reservaDateTime.getTime() - now.getTime();
     const hoursDiff = timeDiff / (1000 * 60 * 60);
 
@@ -319,11 +325,10 @@ export default function MisReservasPage() {
     if (reserva.estado === "cancelada") return false;
     if (reserva.estado === "confirmada" && reserva.pagado) return false;
 
-    // No editar si la reserva es en las próximas 2 horas
+    const dateStr = getReservaDateString(reserva);
+    if (!dateStr) return false;
     const now = new Date();
-    const reservaDateTime = new Date(
-      `${reserva.fecha_reserva}T${reserva.hora_inicio}`
-    );
+    const reservaDateTime = new Date(`${dateStr}T${reserva.hora_inicio}`);
     const timeDiff = reservaDateTime.getTime() - now.getTime();
     const hoursDiff = timeDiff / (1000 * 60 * 60);
 
@@ -462,7 +467,7 @@ export default function MisReservasPage() {
                         <div>
                           <p className="font-semibold text-gray-900">Fecha</p>
                           <p className="text-sm text-gray-700 font-medium capitalize">
-                            {formatDate(reserva.fecha_reserva)}
+                            {formatDate(getReservaDateString(reserva))}
                           </p>
                         </div>
                       </div>

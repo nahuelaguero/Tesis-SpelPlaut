@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,6 +166,8 @@ export default function MiCanchaPage() {
   const stats = cancha_seleccionada ? estadisticas_cancha : estadisticas_consolidadas;
 
   return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
     <div className="container mx-auto space-y-6 px-4 py-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -393,6 +396,7 @@ export default function MiCanchaPage() {
           )}
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

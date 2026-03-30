@@ -201,5 +201,5 @@ export function getMinimumPrice(
   const dynamicPrices =
     cancha.precios_por_horario?.map((rule) => rule.precio_por_hora) ?? [];
 
-  return Math.min(cancha.precio_por_hora, ...dynamicPrices);
+  return Math.round(Math.min(cancha.precio_por_hora, ...dynamicPrices));
 }
