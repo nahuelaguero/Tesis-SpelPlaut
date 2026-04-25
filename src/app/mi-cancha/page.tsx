@@ -27,7 +27,6 @@ import {
   BarChart3,
 } from "lucide-react";
 import { PropietarioDashboard } from "@/types";
-import Link from "next/link";
 
 export default function MiCanchaPage() {
   const { user } = useAuth();
