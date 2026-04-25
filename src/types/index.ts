@@ -92,6 +92,8 @@ export interface Reserva {
   motivo_rechazo?: string;
   aprobada_por_propietario?: boolean;
   fecha_decision?: Date;
+  fecha_aprobacion?: Date;
+  fecha_rechazo?: Date;
   desglose_precios?: {
     hora: string;
     precio: number;
