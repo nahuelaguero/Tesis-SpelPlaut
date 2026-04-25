@@ -51,12 +51,6 @@ export interface Usuario {
   // Eliminado cancha_id - ahora usamos relación inversa (Cancha.propietario_id)
 }
 
-// Precio diferenciado por hora del día
-export interface PrecioHorario {
-  hora: string;       // Formato HH:MM (ej: "08:00", "20:00")
-  precio: number;     // Precio en PYG para esa hora
-}
-
 export interface Cancha {
   _id?: ObjectId;
   nombre: string;
