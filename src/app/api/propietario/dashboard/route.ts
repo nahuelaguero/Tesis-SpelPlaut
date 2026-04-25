@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
     const canchasInfo = await Promise.all(
       canchasDelPropietario.map(async (cancha) => {
         const reservasCancha = todasLasReservas.filter(
-          (r) => r.cancha_id._id.toString() === cancha._id.toString()
+          (r) => r.cancha_id?._id?.toString() === cancha._id.toString()
         );
 
         const ingresosMesCancha = reservasCancha
