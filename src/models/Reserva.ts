@@ -88,11 +88,6 @@ const ReservaSchema = new Schema<Reserva>(
       type: Date,
       default: null,
     },
-    // Para aprobación manual por parte del propietario
-    motivo_rechazo: {
-      type: String,
-      trim: true,
-    },
     fecha_aprobacion: {
       type: Date,
     },
