@@ -51,6 +51,12 @@ export interface Usuario {
   // Eliminado cancha_id - ahora usamos relación inversa (Cancha.propietario_id)
 }
 
+// Precio diferenciado por hora del día
+export interface PrecioHorario {
+  hora: string;       // Formato HH:MM (ej: "08:00", "20:00")
+  precio: number;     // Precio en PYG para esa hora
+}
+
 export interface Cancha {
   _id?: ObjectId;
   nombre: string;
@@ -71,7 +77,7 @@ export interface Cancha {
   disponibilidad?: {
     fecha: string;
     disponible: boolean;
-    motivo?: string; // Razón de la no disponibilidad
+    motivo?: string;
   }[];
 }
 
@@ -92,6 +98,10 @@ export interface Reserva {
   motivo_rechazo?: string;
   aprobada_por_propietario?: boolean;
   fecha_decision?: Date;
+  desglose_precios?: {
+    hora: string;
+    precio: number;
+  }[];
   fecha_reserva: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -192,6 +202,7 @@ export interface PropietarioDashboard {
     usuario: {
       nombre_completo: string;
       email: string;
+      telefono?: string;
     };
     estado: string;
     precio_total: number;
@@ -207,6 +218,7 @@ export interface PropietarioDashboard {
     usuario: {
       nombre_completo: string;
       email: string;
+      telefono?: string;
     };
   }[];
 }

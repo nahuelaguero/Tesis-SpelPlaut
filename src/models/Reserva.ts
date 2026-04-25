@@ -38,6 +38,13 @@ const ReservaSchema = new Schema<Reserva>(
       required: true,
       min: 0,
     },
+    // Desglose de los precios aplicados por hora (para auditoría y transparencia)
+    desglose_precios: [
+      {
+        hora: { type: String, required: true },
+        precio: { type: Number, required: true },
+      },
+    ],
     estado: {
       type: String,
       enum: [
@@ -80,6 +87,17 @@ const ReservaSchema = new Schema<Reserva>(
     fecha_decision: {
       type: Date,
       default: null,
+    },
+    // Para aprobación manual por parte del propietario
+    motivo_rechazo: {
+      type: String,
+      trim: true,
+    },
+    fecha_aprobacion: {
+      type: Date,
+    },
+    fecha_rechazo: {
+      type: Date,
     },
     fecha_reserva: {
       type: Date,

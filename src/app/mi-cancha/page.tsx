@@ -22,8 +22,12 @@ import {
   Settings,
   Users,
   XCircle,
+  CalendarOff,
+  Download,
+  BarChart3,
 } from "lucide-react";
 import { PropietarioDashboard } from "@/types";
+import Link from "next/link";
 
 export default function MiCanchaPage() {
   const { user } = useAuth();
@@ -34,6 +38,7 @@ export default function MiCanchaPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [canchaSeleccionada, setCanchaSeleccionada] = useState<string>("todas");
   const [processingReservationId, setProcessingReservationId] = useState("");
+  const [descargandoReporte, setDescargandoReporte] = useState(false);
 
   const fetchDashboardData = useCallback(async (canchaId?: string) => {
     try {
@@ -179,10 +184,67 @@ export default function MiCanchaPage() {
 
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline">
-            <Link href="/mi-cancha/disponibilidad">Bloquear fechas</Link>
+            <Link href="/mi-cancha/disponibilidad" className="flex items-center">
+              <CalendarOff className="mr-2 h-4 w-4" />
+              Bloquear fechas
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/mi-cancha/reportes" className="flex items-center">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Reportes
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            disabled={descargandoReporte || !reservas_recientes?.length}
+            onClick={() => {
+              setDescargandoReporte(true);
+              try {
+                const rows = reservas_recientes.map((r) => ({
+                  cancha: r.cancha_nombre,
+                  usuario: r.usuario.nombre_completo,
+                  fecha: r.fecha,
+                  hora_inicio: r.hora_inicio,
+                  hora_fin: r.hora_fin,
+                  precio_total: r.precio_total,
+                  estado: r.estado,
+                }));
+                if (!rows.length) return;
+                const headers = Object.keys(rows[0]);
+                const csv = [
+                  headers.join(","),
+                  ...rows.map((r) =>
+                    headers
+                      .map((h) =>
+                        JSON.stringify((r as Record<string, unknown>)[h] ?? "")
+                      )
+                      .join(",")
+                  ),
+                ].join("\n");
+                const blob = new Blob([csv], {
+                  type: "text/csv;charset=utf-8;",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `reporte-reservas-${new Date()
+                  .toISOString()
+                  .slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } finally {
+                setDescargandoReporte(false);
+              }
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {descargandoReporte ? "Generando..." : "Descargar CSV"}
           </Button>
           <Button asChild>
-            <Link href="/mi-cancha/configuracion">
+            <Link href="/mi-cancha/configuracion" className="flex items-center">
               <Settings className="mr-2 h-4 w-4" />
               Configurar canchas
             </Link>

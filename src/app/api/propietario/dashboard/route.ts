@@ -20,11 +20,12 @@ interface PopulatedReserva {
   cancha_id: {
     _id: string;
     nombre: string;
-  };
-    usuario_id: {
-      nombre_completo: string;
-      email: string;
-    };
+  } | null;
+  usuario_id: {
+    nombre_completo: string;
+    email: string;
+    telefono?: string;
+  } | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -326,19 +327,19 @@ export async function GET(request: NextRequest) {
     const reservasRecientes = (await Reserva.find({
       cancha_id: { $in: canchaIds },
     })
-      .populate("usuario_id", "nombre_completo email")
+      .populate("usuario_id", "nombre_completo email telefono")
       .populate("cancha_id", "nombre")
       .sort({ createdAt: -1 })
       .limit(10)) as PopulatedReserva[];
 
+    // Reservas pendientes de aprobación manual (todas las canchas del propietario)
     const reservasPendientesAprobacion = (await Reserva.find({
       cancha_id: { $in: canchaIds },
       estado: { $in: ["pendiente", "pendiente_aprobacion"] },
     })
-      .populate("usuario_id", "nombre_completo email")
+      .populate("usuario_id", "nombre_completo email telefono")
       .populate("cancha_id", "nombre")
-      .sort({ createdAt: -1 })
-      .limit(10)) as PopulatedReserva[];
+      .sort({ createdAt: -1 })) as PopulatedReserva[];
 
     const dashboardData: PropietarioDashboard = {
       canchas: canchasInfo,
@@ -360,10 +361,11 @@ export async function GET(request: NextRequest) {
         fecha: reserva.fecha,
         hora_inicio: reserva.hora_inicio,
         hora_fin: reserva.hora_fin,
-        cancha_nombre: reserva.cancha_id.nombre,
+        cancha_nombre: reserva.cancha_id?.nombre ?? "(cancha eliminada)",
         usuario: {
-          nombre_completo: reserva.usuario_id.nombre_completo,
-          email: reserva.usuario_id.email,
+          nombre_completo:
+            reserva.usuario_id?.nombre_completo ?? "(usuario eliminado)",
+          email: reserva.usuario_id?.email ?? "",
         },
         estado: reserva.estado,
         precio_total: reserva.precio_total,
@@ -374,13 +376,14 @@ export async function GET(request: NextRequest) {
           fecha: reserva.fecha,
           hora_inicio: reserva.hora_inicio,
           hora_fin: reserva.hora_fin,
-          cancha_nombre: reserva.cancha_id.nombre,
+          cancha_nombre: reserva.cancha_id?.nombre ?? "(cancha eliminada)",
           precio_total: reserva.precio_total,
           metodo_pago: (reserva as PopulatedReserva & { metodo_pago?: string })
             .metodo_pago,
           usuario: {
-            nombre_completo: reserva.usuario_id.nombre_completo,
-            email: reserva.usuario_id.email,
+            nombre_completo:
+              reserva.usuario_id?.nombre_completo ?? "(usuario eliminado)",
+            email: reserva.usuario_id?.email ?? "",
           },
         })
       ),

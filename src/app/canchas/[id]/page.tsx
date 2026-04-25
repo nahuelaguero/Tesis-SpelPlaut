@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -17,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/lib/geolocation";
-import { calculateReservationPrice, timeToMinutes } from "@/lib/pricing";
+import { calculateReservationPrice } from "@/lib/pricing";
 import type { PrecioHorario } from "@/types";
 import PaymentMethods from "@/components/PaymentMethods";
 import { CalendarioReservas } from "@/components/reservas/CalendarioReservas";
@@ -69,12 +68,6 @@ export default function CanchaDetailsPage() {
   const [horaFin, setHoraFin] = useState("");
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
-  const [duracionSeleccionada, setDuracionSeleccionada] = useState<number>(0); // 0 = usa el intervalo default
-  const [slotsDisponibles, setSlotsDisponibles] = useState<
-    { hora_inicio: string; hora_fin: string; precio_total: number; duracion_minutos: number }[]
-  >([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-
   // Reseñas
   const [resenas, setResenas] = useState<{ _id: string; calificacion: number; comentario: string; createdAt: string; usuario_id: { nombre_completo: string } }[]>([]);
   const [totalResenas, setTotalResenas] = useState(0);
@@ -127,34 +120,6 @@ export default function CanchaDetailsPage() {
         canchaCoordinates.longitude
       )
     : undefined;
-
-  const intervalo = cancha?.intervalo_reserva_minutos || 60;
-
-  useEffect(() => {
-    if (!fechaReserva || !cancha) {
-      setSlotsDisponibles([]);
-      setHoraInicio("");
-      setHoraFin("");
-      return;
-    }
-    const duracion = duracionSeleccionada || intervalo;
-    setLoadingSlots(true);
-    fetch(`/api/reservas/disponibilidad?cancha_id=${cancha._id}&fecha=${fechaReserva}&duracion=${duracion}`, {
-      credentials: "include",
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          setSlotsDisponibles(data.data.disponibilidad.horarios_disponibles_detalle || []);
-        } else {
-          setSlotsDisponibles([]);
-        }
-        setHoraInicio("");
-        setHoraFin("");
-      })
-      .catch(() => setSlotsDisponibles([]))
-      .finally(() => setLoadingSlots(false));
-  }, [fechaReserva, cancha, duracionSeleccionada]);
 
   useEffect(() => {
     const fetchCancha = async () => {
@@ -356,6 +321,32 @@ export default function CanchaDetailsPage() {
     );
   }
 
+  // Propietarios no reservan: redirigir a su panel
+  if (user && user.rol === "propietario_cancha") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-24 px-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-3">
+              Acceso restringido
+            </h2>
+            <p className="text-gray-700 mb-6">
+              Los propietarios de cancha no pueden hacer reservas. Solo pueden
+              gestionar su propia cancha.
+            </p>
+            <Button
+              onClick={() => router.push("/mi-cancha")}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              Ir a Mi Cancha
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (reservationSuccess) {
     return (
       <div className="min-h-screen bg-white">
@@ -522,7 +513,7 @@ export default function CanchaDetailsPage() {
             />
           )}
 
-          {/* Formulario de reserva integrado */}
+          {/* Confirmación de reserva (solo lectura del slot + pago + notas) */}
           <Card id="formulario-reserva">
             <CardHeader>
               <CardTitle className="flex items-center text-gray-900 font-bold">
@@ -530,186 +521,102 @@ export default function CanchaDetailsPage() {
                 Confirmar reserva
               </CardTitle>
               <CardDescription className="text-gray-700 font-medium">
-                Selecciona un horario arriba o completa los datos manualmente
+                Elegí un horario disponible arriba para continuar
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Indicador de slot seleccionado */}
-              {fechaReserva && horaInicio && horaFin && (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-emerald-800">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="font-medium">
-                      Horario seleccionado: {horaInicio} - {horaFin} del{" "}
-                      {new Date(fechaReserva).toLocaleDateString("es-PY", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
+              {!fechaReserva || !horaInicio || !horaFin ? (
+                <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-center text-gray-600">
+                  Seleccioná un horario en <span className="font-semibold">Disponibilidad y reservas</span> para ver el resumen y confirmar.
                 </div>
-              )}
-
-              <form onSubmit={handleReservation} className="space-y-4">
-                <div>
-                  <Label htmlFor="fecha">Fecha de reserva *</Label>
-                  <Input
-                    id="fecha"
-                    type="date"
-                    value={fechaReserva}
-                    onChange={(e) => setFechaReserva(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    required
-                    placeholder="dd/mm/aaaa"
-                    pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
-                    className="cursor-pointer"
-                    onFocus={(e) =>
-                      e.target.showPicker && e.target.showPicker()
-                    }
-                  />
-                </div>
-
-                {/* Selector de duración */}
-                <div>
-                  <Label>Duración *</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {Array.from({ length: Math.min(8, Math.floor((timeToMinutes(cancha.horario_cierre) - timeToMinutes(cancha.horario_apertura)) / intervalo)) }, (_, i) => (i + 1) * intervalo).map((mins) => {
-                      const horas = Math.floor(mins / 60);
-                      const minutos = mins % 60;
-                      const label = horas > 0
-                        ? minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`
-                        : `${mins}min`;
-                      const selected = (duracionSeleccionada || intervalo) === mins;
-                      return (
-                        <button
-                          key={mins}
-                          type="button"
-                          onClick={() => { setDuracionSeleccionada(mins); setHoraInicio(""); setHoraFin(""); }}
-                          className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
-                            selected
-                              ? "bg-emerald-600 text-white border-emerald-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:border-emerald-400"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="slot-selector">Horario disponible *</Label>
-                  {!fechaReserva ? (
-                    <p className="text-sm text-gray-500 mt-1">Seleccioná una fecha primero.</p>
-                  ) : loadingSlots ? (
-                    <p className="text-sm text-gray-500 mt-1">Cargando horarios...</p>
-                  ) : slotsDisponibles.length === 0 ? (
-                    <p className="text-sm text-red-500 mt-1">No hay horarios disponibles para esta fecha.</p>
-                  ) : (
-                    <select
-                      id="slot-selector"
-                      className="w-full mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      value={horaInicio ? `${horaInicio}|${horaFin}` : ""}
-                      onChange={(e) => {
-                        const [inicio, fin] = e.target.value.split("|");
-                        setHoraInicio(inicio || "");
-                        setHoraFin(fin || "");
-                      }}
-                      required
-                    >
-                      <option value="">-- Elegí un horario --</option>
-                      {slotsDisponibles.map((slot) => (
-                        <option key={slot.hora_inicio} value={`${slot.hora_inicio}|${slot.hora_fin}`}>
-                          {slot.hora_inicio} – {slot.hora_fin} ({slot.duracion_minutos} min) — {formatPrice(slot.precio_total)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Método de pago */}
-                <div>
-                  <Label htmlFor="metodo-pago">Método de pago *</Label>
-                  <PaymentMethods
-                    amount={calculateTotal()}
-                    selectedMethod={metodoPago}
-                    onPaymentSelect={setMetodoPago}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="notas">Comentarios (opcional)</Label>
-                  <Textarea
-                    id="notas"
-                    placeholder="Información adicional para tu reserva... (ej: número de jugadores, solicitudes especiales)"
-                    value={notas}
-                    onChange={(e) => setNotas(e.target.value)}
-                    maxLength={500}
-                    rows={3}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {notas.length}/500 caracteres
-                  </p>
-                </div>
-
-                {/* Resumen */}
-                {horaInicio && horaFin && (
-                  <div className="bg-emerald-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-emerald-800 mb-2">
-                      Resumen de la reserva:
-                    </h3>
-                    <div className="space-y-1 text-sm text-emerald-700">
+              ) : (
+                <form onSubmit={handleReservation} className="space-y-4">
+                  {/* Resumen seleccionado (read-only) */}
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-emerald-800 mb-2">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="font-semibold">Horario seleccionado</span>
+                    </div>
+                    <div className="text-sm text-emerald-900 space-y-0.5">
                       <p>
-                        Duración: {calculateDuration().toFixed(1)} hora
-                        {calculateDuration() !== 1 ? "s" : ""}
+                        <span className="font-medium">Fecha:</span>{" "}
+                        {new Date(fechaReserva + "T00:00:00").toLocaleDateString("es-PY", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
                       </p>
                       <p>
-                        Precio base: {formatPrice(cancha.precio_por_hora)}
+                        <span className="font-medium">Horario:</span> {horaInicio} - {horaFin}{" "}
+                        ({calculateDuration().toFixed(1)} hora{calculateDuration() !== 1 ? "s" : ""})
                       </p>
                       <p>
-                        Intervalo permitido: {cancha.intervalo_reserva_minutos || 60} minutos
+                        <span className="font-medium">Precio/hora:</span>{" "}
+                        {formatPrice(cancha.precio_por_hora)}
                       </p>
                       <p>
-                        Confirmación:{" "}
+                        <span className="font-medium">Confirmación:</span>{" "}
                         {cancha.aprobacion_automatica === false
                           ? "Manual por el propietario"
                           : "Automática si el horario está libre"}
                       </p>
-                      <p className="font-bold text-lg">
-                        Total estimado: {formatPrice(calculateTotal())}
+                      <p className="font-bold text-base mt-1">
+                        Total: {formatPrice(calculateTotal())}
                       </p>
                     </div>
                   </div>
-                )}
 
-                <Button
-                  type="submit"
-                  disabled={reserving || !user}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {reserving
-                    ? "Procesando..."
-                    : user
-                      ? "Confirmar reserva"
-                      : "Inicia sesión para reservar"}
-                </Button>
+                  <div>
+                    <Label htmlFor="metodo-pago">Método de pago *</Label>
+                    <PaymentMethods
+                      amount={calculateTotal()}
+                      selectedMethod={metodoPago}
+                      onPaymentSelect={setMetodoPago}
+                    />
+                  </div>
 
-                {!user && (
-                  <p className="text-sm text-gray-700 font-medium text-center">
-                    <button
-                      type="button"
-                      onClick={() => router.push("/login")}
-                      className="text-emerald-600 hover:text-emerald-700 underline font-semibold"
-                    >
-                      Inicia sesión
-                    </button>{" "}
-                    para poder hacer reservas
-                  </p>
-                )}
-              </form>
+                  <div>
+                    <Label htmlFor="notas">Comentarios (opcional)</Label>
+                    <Textarea
+                      id="notas"
+                      placeholder="Información adicional para tu reserva... (ej: número de jugadores, solicitudes especiales)"
+                      value={notas}
+                      onChange={(e) => setNotas(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {notas.length}/500 caracteres
+                    </p>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={reserving || !user}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {reserving
+                      ? "Procesando..."
+                      : user
+                        ? "Confirmar reserva"
+                        : "Inicia sesión para reservar"}
+                  </Button>
+
+                  {!user && (
+                    <p className="text-sm text-gray-700 font-medium text-center">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/login")}
+                        className="text-emerald-600 hover:text-emerald-700 underline font-semibold"
+                      >
+                        Inicia sesión
+                      </button>{" "}
+                      para poder hacer reservas
+                    </p>
+                  )}
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>

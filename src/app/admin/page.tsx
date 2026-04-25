@@ -17,7 +17,6 @@ import {
   Calendar,
   MapPin,
   BarChart3,
-  Settings,
   Plus,
   Loader2,
   AlertTriangle,
@@ -331,25 +330,6 @@ export default function AdminPage() {
                   className="w-full bg-orange-600 hover:bg-orange-700"
                 >
                   Ver Reportes
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                  <CardTitle className="text-xl text-gray-900">
-                    Configuración
-                  </CardTitle>
-                </div>
-                <CardDescription className="text-gray-700 font-medium">
-                  Ajustes generales del sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full bg-gray-600 hover:bg-gray-700">
-                  Configurar Sistema
                 </Button>
               </CardContent>
             </Card>

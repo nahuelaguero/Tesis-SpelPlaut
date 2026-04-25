@@ -17,56 +17,50 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   const [showLoading, setShowLoading] = useState(false);
   usePushSubscription(!!user);
 
-  // Rutas públicas que no requieren autenticación
-  const publicRoutes = [
+  // Rutas auth-only: redirigen a home si el usuario YA está logueado.
+  const authOnlyRoutes = [
     "/login",
     "/register",
     "/forgot-password",
     "/reset-password",
   ];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  const isAuthOnlyRoute = authOnlyRoutes.includes(pathname);
+
+  // Rutas accesibles sin sesión (catálogo público + auth pages).
+  // El usuario logueado las ve normalmente con su sesión.
+  const isOpenRoute =
+    isAuthOnlyRoute ||
+    pathname === "/" ||
+    pathname === "/canchas" ||
+    pathname.startsWith("/canchas/");
 
   useEffect(() => {
-    // Solo mostrar loading después de un pequeño delay para evitar parpadeo
     if (loading) {
-      const timer = setTimeout(() => {
-        setShowLoading(true);
-      }, 150);
+      const timer = setTimeout(() => setShowLoading(true), 150);
       return () => clearTimeout(timer);
-    } else {
-      setShowLoading(false);
     }
+    setShowLoading(false);
   }, [loading]);
 
   useEffect(() => {
-    // Solo redirigir cuando ya no estamos cargando
-    if (!loading) {
-      if (!user && !isPublicRoute) {
-        // Usuario no autenticado intentando acceder a ruta privada
-        router.push("/login");
-      } else if (user && isPublicRoute) {
-        // Usuario autenticado en ruta pública, redirigir según rol
-        if (user.rol === "propietario_cancha") {
-          router.push("/mi-cancha");
-        } else {
-          router.push("/");
-        }
-      }
-      // Si user && !isPublicRoute -> el usuario está autenticado en una ruta privada,
-      // mantener la URL actual (perfil, admin, etc.)
-    }
-  }, [user, loading, isPublicRoute, router, pathname]);
+    if (loading) return;
 
-  // Mostrar loading si:
-  // 1. AuthContext está cargando
-  // 2. Estamos en el período de delay
-  // 3. Usuario no autenticado en ruta privada (durante redirección)
+    if (!user && !isOpenRoute) {
+      router.push("/login");
+    } else if (user && isAuthOnlyRoute) {
+      if (user.rol === "propietario_cancha") {
+        router.push("/mi-cancha");
+      } else {
+        router.push("/");
+      }
+    }
+  }, [user, loading, isOpenRoute, isAuthOnlyRoute, router, pathname]);
+
   if (loading && showLoading) {
     return <LoadingScreen />;
   }
 
-  // Si no hay usuario y es ruta privada, mostrar loading durante redirección
-  if (!loading && !user && !isPublicRoute) {
+  if (!loading && !user && !isOpenRoute) {
     return <LoadingScreen />;
   }
 

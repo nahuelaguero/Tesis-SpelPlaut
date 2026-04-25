@@ -21,6 +21,7 @@ import {
   DollarSign,
   Clock,
   AlertCircle,
+  Printer,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 
@@ -221,10 +222,18 @@ export default function ReportesPage() {
               <Button
                 onClick={exportarReporte}
                 variant="outline"
-                className="px-4"
+                className="px-4 no-print"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Exportar
+                CSV
+              </Button>
+              <Button
+                onClick={() => window.print()}
+                variant="outline"
+                className="px-4 no-print"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                PDF
               </Button>
             </div>
           </div>

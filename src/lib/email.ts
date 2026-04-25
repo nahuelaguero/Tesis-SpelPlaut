@@ -760,3 +760,147 @@ export const send2FAEmail = async (
     text: `Verificación en dos pasos (2FA)\n\nHola ${userName},\n\nTu código de verificación es: ${code}\n\nEste código es válido por 10 minutos. Si no solicitaste este código, ignora este mensaje.\n\nSpelPlaut`,
   });
 };
+
+// ─────────────────────────────────────────────────────────────
+// Email al PROPIETARIO: nueva solicitud de reserva pendiente
+// ─────────────────────────────────────────────────────────────
+export const sendPropietarioReservaPendiente = async (
+  propietarioEmail: string,
+  data: {
+    propietarioNombre: string;
+    canchaName: string;
+    usuarioNombre: string;
+    usuarioEmail: string;
+    usuarioTelefono?: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    precio: number;
+    reservaId: string;
+  }
+) => {
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("es-PY", {
+      style: "currency",
+      currency: "PYG",
+      minimumFractionDigits: 0,
+    }).format(price);
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("es-PY", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  const content = `
+    <h2>Nueva Solicitud de Reserva 🔔</h2>
+    <p>Hola <strong>${data.propietarioNombre}</strong>,</p>
+    <p>Tienes una nueva solicitud de reserva pendiente de aprobación para tu cancha <strong>${data.canchaName}</strong>.</p>
+
+    <div class="info-box">
+        <h3 style="margin-top: 0; color: #059669;">Datos de la Reserva</h3>
+        <p><strong>Cancha:</strong> ${data.canchaName}</p>
+        <p><strong>Fecha:</strong> ${formatDate(data.fecha)}</p>
+        <p><strong>Horario:</strong> ${data.horaInicio} – ${data.horaFin}</p>
+        <p><strong>Precio Total:</strong> <span style="color: #059669; font-weight: bold;">${formatPrice(data.precio)}</span></p>
+        <hr style="border: none; border-top: 1px solid #bbf7d0; margin: 12px 0;" />
+        <h4 style="margin: 0 0 8px 0;">Datos del Usuario</h4>
+        <p><strong>Nombre:</strong> ${data.usuarioNombre}</p>
+        <p><strong>Email:</strong> ${data.usuarioEmail}</p>
+        ${data.usuarioTelefono ? `<p><strong>Teléfono:</strong> ${data.usuarioTelefono}</p>` : ""}
+    </div>
+
+    <div class="warning-box">
+        <p style="margin: 0;">⏱ <strong>Recordá revisar y responder a tiempo.</strong> El usuario está esperando tu decisión.</p>
+    </div>
+
+    <div class="text-center">
+        <a href="${appUrl}/mi-cancha" class="button">
+            Ir a Mi Dashboard → Aprobar / Rechazar
+        </a>
+    </div>
+
+    <p style="color: #64748b; font-size: 14px;">ID de Reserva: <code>${data.reservaId}</code></p>
+  `;
+
+  return await sendEmail({
+    to: propietarioEmail,
+    subject: `Nueva reserva pendiente – ${data.canchaName} – ${formatDate(data.fecha)}`,
+    html: getBaseTemplate(content, "Nueva Reserva Pendiente"),
+    text: `Nueva Solicitud de Reserva\n\nHola ${data.propietarioNombre},\n\nTienes una nueva reserva pendiente para ${data.canchaName}.\n\nFecha: ${formatDate(data.fecha)}\nHorario: ${data.horaInicio} – ${data.horaFin}\nPrecio: ${formatPrice(data.precio)}\nUsuario: ${data.usuarioNombre} (${data.usuarioEmail})\n\nIngresá a tu dashboard para aprobar o rechazar:\n${appUrl}/mi-cancha\n\nSpelPlaut`,
+  });
+};
+
+// ─────────────────────────────────────────────────────────────
+// Email al USUARIO: reserva rechazada por el propietario
+// ─────────────────────────────────────────────────────────────
+export const sendReservaRechazada = async (
+  userEmail: string,
+  data: {
+    nombre: string;
+    canchaName: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    precio: number;
+    reservaId: string;
+    motivoRechazo: string;
+  }
+) => {
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("es-PY", {
+      style: "currency",
+      currency: "PYG",
+      minimumFractionDigits: 0,
+    }).format(price);
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("es-PY", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  const content = `
+    <h2>Reserva No Aprobada ❌</h2>
+    <p>Hola <strong>${data.nombre}</strong>,</p>
+    <p>Lamentablemente, el propietario de la cancha no pudo aprobar tu reserva esta vez.</p>
+
+    <div class="info-box">
+        <h3 style="margin-top: 0;">Detalles de la Reserva</h3>
+        <p><strong>Cancha:</strong> ${data.canchaName}</p>
+        <p><strong>Fecha:</strong> ${formatDate(data.fecha)}</p>
+        <p><strong>Horario:</strong> ${data.horaInicio} – ${data.horaFin}</p>
+        <p><strong>Total:</strong> ${formatPrice(data.precio)}</p>
+    </div>
+
+    <div class="warning-box">
+        <h4 style="margin-top: 0;">Motivo del rechazo:</h4>
+        <p style="margin: 0;">"${data.motivoRechazo}"</p>
+    </div>
+
+    <p>Podés intentar reservar en otro horario disponible.</p>
+
+    <div class="text-center">
+        <a href="${appUrl}/canchas" class="button">
+            Ver otras canchas disponibles
+        </a>
+    </div>
+
+    <p style="color: #64748b; font-size: 14px;">ID de Reserva: <code>${data.reservaId}</code></p>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject: `Reserva no aprobada – ${data.canchaName}`,
+    html: getBaseTemplate(content, "Reserva No Aprobada"),
+    text: `Reserva No Aprobada\n\nHola ${data.nombre},\n\nTu reserva para ${data.canchaName} el ${formatDate(data.fecha)} no fue aprobada.\n\nMotivo: ${data.motivoRechazo}\n\nPodés intentar reservar en otro horario.\n\nSpelPlaut`,
+  });
+};

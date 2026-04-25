@@ -103,7 +103,6 @@ export async function GET(
       intervalo_reserva_minutos: canchaFromDB.intervalo_reserva_minutos || 60,
       aprobacion_automatica: canchaFromDB.aprobacion_automatica !== false,
       imagen_url: canchaFromDB.imagenes?.[0] || "/api/placeholder/600/400",
-      valoracion: 4.5, // Valor por defecto, TODO: implementar sistema de valoraciones
     };
 
     const response = NextResponse.json<ApiResponse>({

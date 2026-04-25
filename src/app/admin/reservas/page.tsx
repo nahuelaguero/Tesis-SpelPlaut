@@ -34,12 +34,12 @@ interface Reserva {
     nombre_completo: string;
     email: string;
     telefono: string;
-  };
+  } | null;
   cancha_id: {
     _id: string;
     nombre: string;
     ubicacion: string;
-  };
+  } | null;
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
@@ -118,14 +118,16 @@ export default function AdminReservasPage() {
   };
 
   const filteredReservas = reservas.filter((reserva) => {
+    const term = searchTerm.toLowerCase();
+    const usuarioNombre = reserva.usuario_id?.nombre_completo?.toLowerCase() || "";
+    const usuarioEmail = reserva.usuario_id?.email?.toLowerCase() || "";
+    const canchaNombre = reserva.cancha_id?.nombre?.toLowerCase() || "";
+
     const matchesSearch =
-      reserva.usuario_id.nombre_completo
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      reserva.cancha_id.nombre
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      reserva.usuario_id.email.toLowerCase().includes(searchTerm.toLowerCase());
+      !term ||
+      usuarioNombre.includes(term) ||
+      canchaNombre.includes(term) ||
+      usuarioEmail.includes(term);
 
     const matchesEstado =
       filterEstado === "todas" || reserva.estado === filterEstado;
@@ -329,11 +331,11 @@ export default function AdminReservasPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg font-semibold text-gray-900">
-                      {reserva.cancha_id.nombre}
+                      {reserva.cancha_id?.nombre || "(cancha eliminada)"}
                     </CardTitle>
                     <CardDescription className="text-sm text-gray-600 mt-1 flex items-center">
                       <MapPin className="h-3 w-3 mr-1" />
-                      {reserva.cancha_id.ubicacion}
+                      {reserva.cancha_id?.ubicacion || "—"}
                     </CardDescription>
                   </div>
                   {getEstadoBadge(reserva.estado)}
@@ -346,11 +348,11 @@ export default function AdminReservasPage() {
                     <User className="h-4 w-4 mr-2" />
                     <div>
                       <span className="font-medium">
-                        {reserva.usuario_id.nombre_completo}
+                        {reserva.usuario_id?.nombre_completo || "(usuario eliminado)"}
                       </span>
                       <br />
                       <span className="text-xs">
-                        {reserva.usuario_id.email}
+                        {reserva.usuario_id?.email || "—"}
                       </span>
                     </div>
                   </div>

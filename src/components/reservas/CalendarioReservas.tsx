@@ -47,7 +47,7 @@ interface DisponibilidadData {
   cancha_id: string;
   duracion_reserva: number;
   intervalo_reserva_minutos: number;
-  horario_operacion: {
+  horario_operacion?: {
     apertura: string;
     cierre: string;
   };
@@ -66,6 +66,8 @@ interface DisponibilidadData {
   precio_por_hora: number;
   dias_operativos: string[];
   dia_actual: string;
+  cerrado?: boolean;
+  motivo?: string;
 }
 
 function formatPrice(price: number) {
@@ -165,7 +167,7 @@ export function CalendarioReservas({
   };
 
   const generarTimeSlots = (): TimeSlot[] => {
-    if (!disponibilidad) return [];
+    if (!disponibilidad || !disponibilidad.horario_operacion) return [];
 
     const slots: TimeSlot[] = [];
     const opening = timeToMinutes(disponibilidad.horario_operacion.apertura);
@@ -279,7 +281,24 @@ export function CalendarioReservas({
           </div>
         )}
 
-        {disponibilidad && !loading && !error && (
+        {/* Día cerrado / cancha no opera */}
+        {disponibilidad && !loading && !error && disponibilidad.cerrado && (
+          <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-amber-900">Sin disponibilidad este día</p>
+              <p className="text-amber-800">
+                {disponibilidad.motivo || "La cancha no opera en la fecha seleccionada."}
+              </p>
+              <p className="text-amber-700 mt-1">
+                Probá con otra fecha usando el calendario.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Horarios disponibles */}
+        {disponibilidad && !loading && !error && !disponibilidad.cerrado && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-gray-900">Horarios disponibles</h4>

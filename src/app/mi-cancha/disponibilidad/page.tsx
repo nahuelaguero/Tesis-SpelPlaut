@@ -29,6 +29,7 @@ import {
   Loader2,
   X,
   Settings,
+  ChevronLeft,
 } from "lucide-react";
 
 interface DisponibilidadItem {
@@ -208,6 +209,13 @@ export default function DisponibilidadPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <a
+            href="/mi-cancha"
+            className="inline-flex items-center gap-1 text-sm text-emerald-700 hover:text-emerald-800 mb-3"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Volver a Mi Cancha
+          </a>
           <div className="flex items-center space-x-3 mb-2">
             <Settings className="h-8 w-8 text-emerald-600" />
             <h1 className="text-3xl font-bold text-gray-900">
