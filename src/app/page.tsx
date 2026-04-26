@@ -55,7 +55,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-sky-700 px-8 py-4 text-lg"
+                  className="bg-transparent border-white text-white hover:bg-white hover:text-sky-700 px-8 py-4 text-lg"
                 >
                   Crear Cuenta Gratis
                 </Button>
@@ -399,7 +399,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-sky-700 px-8 py-4 text-lg"
+                className="bg-transparent border-white text-white hover:bg-white hover:text-sky-700 px-8 py-4 text-lg"
               >
                 Explorar Canchas
               </Button>
