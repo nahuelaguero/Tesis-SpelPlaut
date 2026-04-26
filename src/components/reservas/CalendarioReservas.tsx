@@ -79,7 +79,7 @@ function formatPrice(price: number) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("es-PY", {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("es-PY", {
     weekday: "long",
     year: "numeric",
     month: "long",
