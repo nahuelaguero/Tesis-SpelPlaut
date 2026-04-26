@@ -10,6 +10,7 @@ import {
 } from "@/components/canchas/CanchaCard";
 import { MapView } from "@/components/maps/MapView";
 import { useGeolocation } from "@/lib/geolocation";
+import { parseUbicacionACoords } from "@/lib/parse-ubicacion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Search, Filter, MapPin, Map, List } from "lucide-react";
 
@@ -29,6 +30,17 @@ interface Cancha {
   imagenes?: string[];
   valoracion?: number;
   total_resenas?: number;
+}
+
+// Offset determinístico (mismo cancha → mismo punto) para canchas sin coords parseables.
+function stableOffsetCoords(id: string): { latitude: number; longitude: number } {
+  const baseLatitude = -22.3667;
+  const baseLongitude = -59.85;
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  const offsetLat = ((hash & 0xff) / 255 - 0.5) * 0.02;
+  const offsetLng = (((hash >> 8) & 0xff) / 255 - 0.5) * 0.02;
+  return { latitude: baseLatitude + offsetLat, longitude: baseLongitude + offsetLng };
 }
 
 export default function CanchasPage() {
@@ -222,6 +234,28 @@ export default function CanchasPage() {
         </div>
       </section>
 
+      {/* Banner: registrar cancha o solicitar ser propietario */}
+      <section className="bg-blue-50 border-y border-blue-100 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-blue-900 font-semibold">
+              ¿Tenés una cancha o querés registrarte como propietario?
+            </p>
+            <p className="text-sm text-blue-800">
+              Completá el formulario y te contactamos para activar tu cuenta o publicar tu cancha.
+            </p>
+          </div>
+          <a
+            href="https://forms.gle/RsLtwXYBK8RKXg8t7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 text-sm whitespace-nowrap"
+          >
+            Solicitar registro
+          </a>
+        </div>
+      </section>
+
       {/* Resultados */}
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -261,10 +295,10 @@ export default function CanchasPage() {
             <div className="space-y-4">
               <MapView
                 canchas={filteredCanchas.map((cancha) => {
-                  // Convertir formato para MapView
-                  const baseLatitude = -22.3667;
-                  const baseLongitude = -59.85;
-                  const randomOffset = () => (Math.random() - 0.5) * 0.02;
+                  // Intentar parsear coords reales del campo ubicacion (DMS o decimal).
+                  // Si no es parseable, fallback a Loma Plata + offset estable por id.
+                  const parsed = parseUbicacionACoords(cancha.ubicacion);
+                  const fallback = stableOffsetCoords(cancha._id);
 
                   return {
                     _id: cancha._id,
@@ -273,10 +307,7 @@ export default function CanchasPage() {
                     tipo_cancha: cancha.tipo,
                     ubicacion: cancha.ubicacion,
                     precio_por_hora: cancha.precio_por_hora,
-                    coordenadas: {
-                      latitude: baseLatitude + randomOffset(),
-                      longitude: baseLongitude + randomOffset(),
-                    },
+                    coordenadas: parsed ?? fallback,
                   };
                 })}
                 userLocation={location?.coordinates}
@@ -300,15 +331,12 @@ export default function CanchasPage() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCanchas.map((cancha, index) => {
-                  // Convertir el formato de cancha al que espera CanchaCard
-                  // Simular coordenadas para Loma Plata (centro aproximado)
-                  const baseLatitude = -22.3667;
-                  const baseLongitude = -59.85;
-                  const randomOffset = () => (Math.random() - 0.5) * 0.02; // ~1km de radio
+                  const parsed = parseUbicacionACoords(cancha.ubicacion);
+                  const coords = parsed ?? stableOffsetCoords(cancha._id);
 
                   const canchaFormatted = {
                     _id: cancha._id,
-                    descripcion: cancha.nombre, // CanchaCard usa descripcion para el título
+                    descripcion: cancha.nombre,
                     tipo_cancha: cancha.tipo,
                     ubicacion: cancha.ubicacion,
                     precio_por_hora: cancha.precio_por_hora,
@@ -323,11 +351,7 @@ export default function CanchasPage() {
                       : cancha.imagen_url
                         ? [cancha.imagen_url]
                         : [],
-                    // Coordenadas simuladas para Loma Plata
-                    coordenadas: {
-                      latitude: baseLatitude + randomOffset(),
-                      longitude: baseLongitude + randomOffset(),
-                    },
+                    coordenadas: coords,
                   };
 
                   return (

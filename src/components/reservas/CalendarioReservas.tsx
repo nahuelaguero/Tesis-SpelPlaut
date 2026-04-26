@@ -111,22 +111,29 @@ export function CalendarioReservas({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  // Múltiplos del intervalo (1 = 1x intervalo, 2 = 2x, ..., 8 = 8x).
+  // El usuario elige cuántos slots consecutivos reservar.
+  const [duracionMultiplicador, setDuracionMultiplicador] = useState<number>(1);
 
   useEffect(() => {
     if (fechaSeleccionada && canchaId) {
-      void cargarDisponibilidad();
+      void cargarDisponibilidad(duracionMultiplicador);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fechaSeleccionada, canchaId]);
+  }, [fechaSeleccionada, canchaId, duracionMultiplicador]);
 
-  const cargarDisponibilidad = async () => {
+  const cargarDisponibilidad = async (multiplicador: number = 1) => {
     setLoading(true);
     setError(null);
     setSelectedSlot(null);
 
     try {
+      // Primer fetch sin duracion para descubrir el intervalo de la cancha
+      const intervalParam = disponibilidad?.intervalo_reserva_minutos
+        ? `&duracion=${disponibilidad.intervalo_reserva_minutos * multiplicador}`
+        : "";
       const response = await fetch(
-        `/api/reservas/disponibilidad?cancha_id=${canchaId}&fecha=${fechaSeleccionada}`
+        `/api/reservas/disponibilidad?cancha_id=${canchaId}&fecha=${fechaSeleccionada}${intervalParam}`
       );
       const data = await response.json();
 
@@ -305,6 +312,40 @@ export function CalendarioReservas({
               <Badge variant="outline" className="text-emerald-600">
                 Intervalo {disponibilidad.intervalo_reserva_minutos} min
               </Badge>
+            </div>
+
+            {/* Selector de duración (múltiplos del intervalo) */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                ¿Cuánto querés reservar?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((mult) => {
+                  const totalMin = (disponibilidad.intervalo_reserva_minutos || 60) * mult;
+                  const horas = Math.floor(totalMin / 60);
+                  const mins = totalMin % 60;
+                  const label = horas === 0
+                    ? `${mins}min`
+                    : mins === 0
+                      ? `${horas}h`
+                      : `${horas}h${mins}`;
+                  const active = duracionMultiplicador === mult;
+                  return (
+                    <button
+                      key={mult}
+                      type="button"
+                      onClick={() => setDuracionMultiplicador(mult)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-semibold border transition-colors ${
+                        active
+                          ? "bg-emerald-600 text-white border-emerald-600"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-emerald-400"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">

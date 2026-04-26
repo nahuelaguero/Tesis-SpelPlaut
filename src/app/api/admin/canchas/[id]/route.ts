@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Cancha from "@/models/Cancha";
+import "@/models/Usuario"; // Registrar schema para populate("propietario_id")
 import { requireAdmin, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 

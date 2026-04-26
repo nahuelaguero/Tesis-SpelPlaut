@@ -74,7 +74,8 @@ export default function EditarCanchaPage() {
 
   const loadCancha = useCallback(async () => {
     try {
-      const response = await fetch(`/api/canchas/${canchaId}`, {
+      // Usar endpoint admin que devuelve los campos crudos (tipo_cancha, capacidad_jugadores, propietario_id)
+      const response = await fetch(`/api/admin/canchas/${canchaId}`, {
         credentials: "include",
       });
 

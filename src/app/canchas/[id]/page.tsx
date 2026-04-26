@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/lib/geolocation";
 import { calculateReservationPrice } from "@/lib/pricing";
+import { parseUbicacionACoords } from "@/lib/parse-ubicacion";
 import type { PrecioHorario } from "@/types";
 import PaymentMethods from "@/components/PaymentMethods";
 import { CalendarioReservas } from "@/components/reservas/CalendarioReservas";
@@ -77,12 +78,11 @@ export default function CanchaDetailsPage() {
   const [enviandoResena, setEnviandoResena] = useState(false);
   const [resenaMsg, setResenaMsg] = useState("");
 
-  // Coordenadas simuladas para Loma Plata (centro aproximado)
-  const baseLatitude = -22.3667;
-  const baseLongitude = -59.85;
-  const canchaCoordinates = {
-    latitude: baseLatitude + (Math.random() - 0.5) * 0.01,
-    longitude: baseLongitude + (Math.random() - 0.5) * 0.01,
+  // Coords reales del campo ubicacion (DMS o decimal); fallback a Loma Plata si no parseable.
+  const parsedCoords = parseUbicacionACoords(cancha?.ubicacion);
+  const canchaCoordinates = parsedCoords ?? {
+    latitude: -22.3667,
+    longitude: -59.85,
   };
 
   // Calcular distancia usando la fórmula de Haversine
