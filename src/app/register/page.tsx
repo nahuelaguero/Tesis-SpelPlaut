@@ -308,6 +308,23 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              <div className="text-center text-sm text-gray-600">
+                Al crear una cuenta, aceptas nuestros{" "}
+                <Link
+                  href="/terminos-condiciones"
+                  className="text-sky-600 hover:text-sky-500 font-medium"
+                >
+                  Términos y Condiciones
+                </Link>{" "}
+                y{" "}
+                <Link
+                  href="/politica-privacidad"
+                  className="text-sky-600 hover:text-sky-500 font-medium"
+                >
+                  Política de Privacidad
+                </Link>
+              </div>
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
@@ -347,23 +364,6 @@ export default function RegisterPage() {
           </CardContent>
         </Card>
 
-        {/* Términos */}
-        <div className="text-center text-sm text-gray-700 font-medium">
-          Al crear una cuenta, aceptas nuestros{" "}
-          <Link
-            href="/terminos-condiciones"
-            className="text-sky-600 hover:text-sky-500 font-semibold"
-          >
-            Términos y Condiciones
-          </Link>{" "}
-          y{" "}
-          <Link
-            href="/politica-privacidad"
-            className="text-sky-600 hover:text-sky-500 font-semibold"
-          >
-            Política de Privacidad
-          </Link>
-        </div>
       </div>
     </div>
   );
