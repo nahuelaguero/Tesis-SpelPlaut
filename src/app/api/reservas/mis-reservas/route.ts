@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
+import "@/models/Cancha"; // Registrar schema para populate
 import { requireAuth } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 

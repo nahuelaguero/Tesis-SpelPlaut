@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
+import "@/models/Usuario"; // Registrar schemas para populate
+import "@/models/Cancha";
 import { ApiResponse } from "@/types";
 import { verify } from "jsonwebtoken";
 

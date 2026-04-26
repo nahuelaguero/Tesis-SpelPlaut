@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Reserva from "@/models/Reserva";
+// Import necesario para registrar los schemas usados por populate
+import "@/models/Usuario";
+import "@/models/Cancha";
 import { ApiResponse } from "@/types";
 import { verify } from "jsonwebtoken";
 

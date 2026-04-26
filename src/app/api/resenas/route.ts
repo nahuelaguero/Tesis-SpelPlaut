@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Resena from "@/models/Resena";
+import "@/models/Usuario"; // Registrar schema para populate
 import { requireAuth, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
