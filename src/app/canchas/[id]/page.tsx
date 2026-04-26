@@ -321,8 +321,9 @@ export default function CanchaDetailsPage() {
     );
   }
 
-  // Propietarios no reservan: redirigir a su panel
-  if (user && user.rol === "propietario_cancha") {
+  // Propietarios y administradores no reservan: redirigir a sus paneles
+  if (user && (user.rol === "propietario_cancha" || user.rol === "admin")) {
+    const isAdmin = user.rol === "admin";
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -332,14 +333,15 @@ export default function CanchaDetailsPage() {
               Acceso restringido
             </h2>
             <p className="text-gray-700 mb-6">
-              Los propietarios de cancha no pueden hacer reservas. Solo pueden
-              gestionar su propia cancha.
+              {isAdmin 
+                ? "Los administradores no pueden hacer reservas." 
+                : "Los propietarios de cancha no pueden hacer reservas. Solo pueden gestionar su propia cancha."}
             </p>
             <Button
-              onClick={() => router.push("/mi-cancha")}
+              onClick={() => router.push(isAdmin ? "/admin" : "/mi-cancha")}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              Ir a Mi Cancha
+              Ir a {isAdmin ? "Panel de Administración" : "Mi Cancha"}
             </Button>
           </div>
         </div>

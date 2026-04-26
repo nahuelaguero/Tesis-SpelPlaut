@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     // Obtener estadísticas básicas
     const [totalUsuarios, totalCanchas, totalReservas] = await Promise.all([
       Usuario.countDocuments(),
-      Cancha.countDocuments(),
+      Cancha.countDocuments({ disponible: true }),
       Reserva.countDocuments(),
     ]);
 
