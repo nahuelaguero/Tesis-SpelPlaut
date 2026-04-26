@@ -127,6 +127,14 @@ export default function PropietarioReportesPage() {
     window.print();
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600" />
+      </div>
+    );
+  }
+
   if (!user || user.rol !== "propietario_cancha") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
