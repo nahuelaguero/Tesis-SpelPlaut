@@ -49,6 +49,7 @@ import {
   CheckCircle,
   XCircle,
   DollarSign,
+  Star,
 } from "lucide-react";
 
 interface Reserva {
@@ -70,7 +71,7 @@ interface Reserva {
   hora_fin: string;
   duracion_horas: number;
   precio_total: number;
-  estado: "confirmada" | "pendiente" | "pendiente_aprobacion" | "cancelada";
+  estado: "confirmada" | "pendiente" | "pendiente_aprobacion" | "cancelada" | "completada";
   metodo_pago?: string;
   pagado: boolean;
   createdAt: string;
@@ -88,6 +89,11 @@ export default function MisReservasPage() {
     hora_inicio: "",
     hora_fin: "",
     notas: "",
+  });
+  const [reviewReserva, setReviewReserva] = useState<Reserva | null>(null);
+  const [reviewForm, setReviewForm] = useState({
+    calificacion: 5,
+    comentario: "",
   });
   const router = useRouter();
 
@@ -253,6 +259,38 @@ export default function MisReservasPage() {
     } catch (error) {
       console.error("Error al modificar reserva:", error);
       alert("Error al procesar la modificación");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewReserva) return;
+    
+    setActionLoading(reviewReserva._id);
+    try {
+      const response = await fetch("/api/resenas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          cancha_id: reviewReserva.cancha_id._id,
+          calificacion: reviewForm.calificacion,
+          comentario: reviewForm.comentario,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert("¡Reseña enviada exitosamente!");
+        setReviewReserva(null);
+        setReviewForm({ calificacion: 5, comentario: "" });
+      } else {
+        alert(data.message || "Error al enviar reseña");
+      }
+    } catch (error) {
+      console.error("Error al enviar reseña:", error);
+      alert("Error de conexión al enviar reseña");
     } finally {
       setActionLoading(null);
     }
@@ -528,6 +566,15 @@ export default function MisReservasPage() {
                       </div>
                     )}
 
+                    {reserva.estado === "completada" && (
+                      <div className="flex items-center space-x-2 bg-blue-50 rounded-lg p-3">
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                        <p className="text-sm text-blue-700">
+                          ¡Esperamos que hayas disfrutado tu partido!
+                        </p>
+                      </div>
+                    )}
+
                     {reserva.estado === "confirmada" && !reserva.pagado && (
                       <div className="flex items-center space-x-2 bg-blue-50 rounded-lg p-3">
                         <AlertCircle className="h-5 w-5 text-blue-600" />
@@ -719,6 +766,82 @@ export default function MisReservasPage() {
                             </AlertDialogContent>
                           </AlertDialog>
                         )}
+                      </div>
+                    )}
+
+                    {reserva.estado === "completada" && user?.rol !== "admin" && (
+                      <div className="flex space-x-2 pt-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              onClick={() => setReviewReserva(reserva)}
+                              disabled={actionLoading === reserva._id}
+                              className="flex-1 bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                            >
+                              <Star className="h-4 w-4 mr-2 text-yellow-500" />
+                              Dejar Reseña
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Dejar Reseña</DialogTitle>
+                              <DialogDescription>
+                                ¿Qué te pareció tu experiencia en {reserva.cancha_id.nombre}?
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="flex justify-center space-x-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => setReviewForm({ ...reviewForm, calificacion: star })}
+                                    className="focus:outline-none transition-transform hover:scale-110"
+                                  >
+                                    <Star 
+                                      className={`h-8 w-8 ${
+                                        star <= reviewForm.calificacion
+                                          ? "text-yellow-400 fill-current"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="grid items-center gap-4">
+                                <Label htmlFor="comentario">
+                                  Comentario (Opcional)
+                                </Label>
+                                <Textarea
+                                  id="comentario"
+                                  value={reviewForm.comentario}
+                                  onChange={(e) =>
+                                    setReviewForm({
+                                      ...reviewForm,
+                                      comentario: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Escribe tu opinión sobre la cancha..."
+                                  className="min-h-[100px]"
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                type="button"
+                                onClick={handleSubmitReview}
+                                disabled={actionLoading === reviewReserva?._id}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                {actionLoading === reviewReserva?._id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : null}
+                                Enviar Reseña
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     )}
                   </CardContent>
