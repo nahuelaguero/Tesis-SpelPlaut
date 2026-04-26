@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { DiaSemana, PrecioHorario } from "@/types";
-import { Settings, Save } from "lucide-react";
-
+import Link from "next/link";
+import { Settings, Save, ArrowLeft } from "lucide-react";
 const days: DiaSemana[] = [
   "lunes",
   "martes",
@@ -156,6 +156,16 @@ export default function ConfiguracionMiCanchaPage() {
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-8">
+      <div className="mb-2">
+        <Link 
+          href="/mi-cancha" 
+          className="inline-flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700"
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Volver a Mi Cancha
+        </Link>
+      </div>
+
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-3">
