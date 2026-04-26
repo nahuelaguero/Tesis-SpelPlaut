@@ -408,6 +408,34 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Sección: Sumá tu cancha */}
+      <section className="py-20 bg-emerald-50 border-y border-emerald-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-emerald-900">
+            ¿Tenés una cancha?
+          </h2>
+          <p className="mt-4 text-lg text-emerald-800 max-w-2xl mx-auto">
+            Sumá tu cancha a SpelPlaut y empezá a recibir reservas de la
+            comunidad de Loma Plata. Completá el formulario y nuestro equipo
+            te contacta para activar tu cuenta de propietario.
+          </p>
+          <div className="mt-8">
+            <a
+              href="https://forms.gle/RsLtwXYBK8RKXg8t7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 text-lg"
+            >
+              Registrar mi cancha
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </a>
+          </div>
+          <p className="mt-3 text-sm text-emerald-700">
+            Es gratis y solo lleva un minuto.
+          </p>
+        </div>
+      </section>
+
       {/* Sección SpelPlaut */}
       <section className="py-24 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
