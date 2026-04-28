@@ -430,15 +430,6 @@ export default function LoginPage() {
               Regístrate aquí
             </Link>
           </p>
-          <p className="text-sm text-gray-600 mt-2">
-            ¿Problemas para acceder?{" "}
-            <Link
-              href="/forgot-password"
-              className="font-medium text-sky-600 hover:text-sky-500"
-            >
-              Recuperar contraseña
-            </Link>
-          </p>
         </div>
       </div>
     </div>

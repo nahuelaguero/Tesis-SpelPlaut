@@ -366,6 +366,7 @@ export async function GET(request: NextRequest) {
           nombre_completo:
             reserva.usuario_id?.nombre_completo ?? "(usuario eliminado)",
           email: reserva.usuario_id?.email ?? "",
+          telefono: reserva.usuario_id?.telefono ?? "",
         },
         estado: reserva.estado,
         precio_total: reserva.precio_total,
@@ -384,6 +385,7 @@ export async function GET(request: NextRequest) {
             nombre_completo:
               reserva.usuario_id?.nombre_completo ?? "(usuario eliminado)",
             email: reserva.usuario_id?.email ?? "",
+            telefono: reserva.usuario_id?.telefono ?? "",
           },
         })
       ),
