@@ -30,6 +30,7 @@ export type GeolocationPermissionState =
 
 // Verificar si la geolocalización está soportada
 export function isGeolocationSupported(): boolean {
+  if (typeof navigator === "undefined") return false;
   return "geolocation" in navigator;
 }
 

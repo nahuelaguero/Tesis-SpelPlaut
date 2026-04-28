@@ -26,26 +26,76 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { formatCurrencyPYG, formatDateSafe, safeText, toSafeNumber } from "@/lib/safe-format";
 
 interface Reserva {
   _id: string;
-  usuario_id: {
+  usuario_id?: {
     _id: string;
-    nombre_completo: string;
-    email: string;
-    telefono: string;
+    nombre_completo?: string | null;
+    email?: string | null;
+    telefono?: string | null;
   } | null;
-  cancha_id: {
+  cancha_id?: {
     _id: string;
-    nombre: string;
-    ubicacion: string;
+    nombre?: string | null;
+    ubicacion?: string | null;
   } | null;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  precio_total: number;
-  estado: "pendiente" | "confirmada" | "cancelada" | "completada";
-  fecha_reserva: string;
+  fecha?: string | null;
+  hora_inicio?: string | null;
+  hora_fin?: string | null;
+  precio_total?: number | null;
+  estado?: string | null;
+  fecha_reserva?: string | null;
+}
+
+const ESTADO_OPTIONS = [
+  { value: "pendiente", label: "Pendiente" },
+  { value: "pendiente_aprobacion", label: "Por Aprobar" },
+  { value: "confirmada", label: "Confirmada" },
+  { value: "completada", label: "Completada" },
+  { value: "cancelada", label: "Cancelada" },
+  { value: "rechazada", label: "Rechazada" },
+] as const;
+
+const ESTADO_META = {
+  pendiente: {
+    className: "bg-yellow-100 text-yellow-800",
+    label: "Pendiente",
+    icon: <AlertTriangle className="h-3 w-3" />,
+  },
+  pendiente_aprobacion: {
+    className: "bg-orange-100 text-orange-800",
+    label: "Por Aprobar",
+    icon: <Clock className="h-3 w-3" />,
+  },
+  confirmada: {
+    className: "bg-green-100 text-green-800",
+    label: "Confirmada",
+    icon: <CheckCircle className="h-3 w-3" />,
+  },
+  cancelada: {
+    className: "bg-red-100 text-red-800",
+    label: "Cancelada",
+    icon: <XCircle className="h-3 w-3" />,
+  },
+  completada: {
+    className: "bg-blue-100 text-blue-800",
+    label: "Completada",
+    icon: <CheckCircle className="h-3 w-3" />,
+  },
+  rechazada: {
+    className: "bg-rose-100 text-rose-800",
+    label: "Rechazada",
+    icon: <XCircle className="h-3 w-3" />,
+  },
+};
+
+type ReservaEstado = keyof typeof ESTADO_META;
+
+function getKnownEstado(estado: unknown): ReservaEstado | null {
+  if (typeof estado !== "string") return null;
+  return estado in ESTADO_META ? (estado as ReservaEstado) : null;
 }
 
 export default function AdminReservasPage() {
@@ -78,7 +128,7 @@ export default function AdminReservasPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setReservas(data.data.reservas || []);
+          setReservas(Array.isArray(data.data?.reservas) ? data.data.reservas : []);
         } else {
           setMessage(data.message || "Error al cargar reservas");
         }
@@ -118,16 +168,15 @@ export default function AdminReservasPage() {
   };
 
   const filteredReservas = reservas.filter((reserva) => {
-    const term = searchTerm.toLowerCase();
-    const usuarioNombre = reserva.usuario_id?.nombre_completo?.toLowerCase() || "";
-    const usuarioEmail = reserva.usuario_id?.email?.toLowerCase() || "";
-    const canchaNombre = reserva.cancha_id?.nombre?.toLowerCase() || "";
+    const search = searchTerm.toLowerCase();
+    const usuarioNombre = safeText(reserva.usuario_id?.nombre_completo, "");
+    const usuarioEmail = safeText(reserva.usuario_id?.email, "");
+    const canchaNombre = safeText(reserva.cancha_id?.nombre, "");
 
     const matchesSearch =
-      !term ||
-      usuarioNombre.includes(term) ||
-      canchaNombre.includes(term) ||
-      usuarioEmail.includes(term);
+      usuarioNombre.toLowerCase().includes(search) ||
+      canchaNombre.toLowerCase().includes(search) ||
+      usuarioEmail.toLowerCase().includes(search);
 
     const matchesEstado =
       filterEstado === "todas" || reserva.estado === filterEstado;
@@ -135,55 +184,32 @@ export default function AdminReservasPage() {
     return matchesSearch && matchesEstado;
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-PY", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("es-PY", {
-      style: "currency",
-      currency: "PYG",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
   const getEstadoBadge = (estado: string) => {
-    const styles = {
-      pendiente: "bg-yellow-100 text-yellow-800",
-      confirmada: "bg-green-100 text-green-800",
-      cancelada: "bg-red-100 text-red-800",
-      completada: "bg-blue-100 text-blue-800",
-    };
-
-    const icons = {
-      pendiente: <AlertTriangle className="h-3 w-3" />,
-      confirmada: <CheckCircle className="h-3 w-3" />,
-      cancelada: <XCircle className="h-3 w-3" />,
-      completada: <CheckCircle className="h-3 w-3" />,
-    };
-
-    const labels = {
-      pendiente: "Pendiente",
-      confirmada: "Confirmada",
-      cancelada: "Cancelada",
-      completada: "Completada",
-    };
+    const knownEstado = getKnownEstado(estado);
+    const meta = knownEstado ? ESTADO_META[knownEstado] : null;
 
     return (
       <span
         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          styles[estado as keyof typeof styles]
+          meta?.className || "bg-gray-100 text-gray-800"
         }`}
       >
-        {icons[estado as keyof typeof icons]}
-        <span className="ml-1">{labels[estado as keyof typeof labels]}</span>
+        {meta?.icon || <AlertCircle className="h-3 w-3" />}
+        <span className="ml-1">{meta?.label || "Estado desconocido"}</span>
       </span>
     );
   };
+
+  if (loading || loadingReservas) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+      </div>
+    );
+  }
 
   // Verificar permisos
   if (!user || user.rol !== "admin") {
@@ -200,17 +226,6 @@ export default function AdminReservasPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  if (loading || loadingReservas) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        </div>
       </div>
     );
   }
@@ -271,10 +286,11 @@ export default function AdminReservasPage() {
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             >
               <option value="todas">Todos los estados</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="confirmada">Confirmadas</option>
-              <option value="completada">Completadas</option>
-              <option value="cancelada">Canceladas</option>
+              {ESTADO_OPTIONS.map((estado) => (
+                <option key={estado.value} value={estado.value}>
+                  {estado.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -311,8 +327,8 @@ export default function AdminReservasPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-emerald-600">
-                {formatPrice(
-                  reservas.reduce((sum, r) => sum + r.precio_total, 0)
+                {formatCurrencyPYG(
+                  reservas.reduce((sum, r) => sum + toSafeNumber(r.precio_total), 0)
                 )}
               </div>
               <p className="text-sm text-gray-600">Ingresos totales</p>
@@ -322,23 +338,23 @@ export default function AdminReservasPage() {
 
         {/* Lista de reservas */}
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredReservas.map((reserva) => (
+          {filteredReservas.map((reserva, index) => (
             <Card
-              key={reserva._id}
+              key={reserva._id || `reserva-${index}`}
               className="hover:shadow-md transition-shadow"
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg font-semibold text-gray-900">
-                      {reserva.cancha_id?.nombre || "(cancha eliminada)"}
+                      {safeText(reserva.cancha_id?.nombre, "Cancha no disponible")}
                     </CardTitle>
                     <CardDescription className="text-sm text-gray-600 mt-1 flex items-center">
                       <MapPin className="h-3 w-3 mr-1" />
-                      {reserva.cancha_id?.ubicacion || "—"}
+                      {safeText(reserva.cancha_id?.ubicacion, "Ubicación no disponible")}
                     </CardDescription>
                   </div>
-                  {getEstadoBadge(reserva.estado)}
+                  {getEstadoBadge(reserva.estado || "")}
                 </div>
               </CardHeader>
 
@@ -348,33 +364,33 @@ export default function AdminReservasPage() {
                     <User className="h-4 w-4 mr-2" />
                     <div>
                       <span className="font-medium">
-                        {reserva.usuario_id?.nombre_completo || "(usuario eliminado)"}
+                        {safeText(reserva.usuario_id?.nombre_completo, "Usuario no disponible")}
                       </span>
                       <br />
                       <span className="text-xs">
-                        {reserva.usuario_id?.email || "—"}
+                        {safeText(reserva.usuario_id?.email, "Email no disponible")}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="h-4 w-4 mr-2" />
-                    <span>{formatDate(reserva.fecha)}</span>
+                    <span>{formatDateSafe(reserva.fecha)}</span>
                   </div>
 
                   <div className="flex items-center text-sm text-gray-600">
                     <Clock className="h-4 w-4 mr-2" />
                     <span>
-                      {reserva.hora_inicio} - {reserva.hora_fin}
+                      {safeText(reserva.hora_inicio, "--:--")} - {safeText(reserva.hora_fin, "--:--")}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                     <span className="text-lg font-bold text-emerald-600">
-                      {formatPrice(reserva.precio_total)}
+                      {formatCurrencyPYG(reserva.precio_total)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      Reservado: {formatDate(reserva.fecha_reserva)}
+                      Reservado: {formatDateSafe(reserva.fecha_reserva)}
                     </span>
                   </div>
 
@@ -383,16 +399,22 @@ export default function AdminReservasPage() {
                       Cambiar Estado:
                     </label>
                     <select
-                      value={reserva.estado}
+                      value={getKnownEstado(reserva.estado) || "desconocido"}
                       onChange={(e) =>
                         handleEstadoChange(reserva._id, e.target.value)
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="pendiente">Pendiente</option>
-                      <option value="confirmada">Confirmada</option>
-                      <option value="completada">Completada</option>
-                      <option value="cancelada">Cancelada</option>
+                      {!getKnownEstado(reserva.estado) && (
+                        <option value="desconocido" disabled>
+                          Estado desconocido
+                        </option>
+                      )}
+                      {ESTADO_OPTIONS.map((estado) => (
+                        <option key={estado.value} value={estado.value}>
+                          {estado.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

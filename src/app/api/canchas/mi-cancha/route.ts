@@ -118,6 +118,7 @@ export async function PUT(request: NextRequest) {
       aprobacion_automatica,
       descripcion,
       nombre,
+      coordenadas,
     } = body;
 
     if (!cancha_id || !isValidObjectId(cancha_id)) {
@@ -175,6 +176,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (coordenadas !== undefined) {
+      const latitude = Number(coordenadas?.latitude);
+      const longitude = Number(coordenadas?.longitude);
+      const coordinatesAreValid =
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+
+      if (!coordinatesAreValid) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, message: "Las coordenadas de la cancha son inválidas." },
+          { status: 400 }
+        );
+      }
+    }
+
     cancha.intervalo_reserva_minutos = normalizedInterval;
 
     if (imagenes !== undefined) cancha.imagenes = imagenes;
@@ -188,6 +208,7 @@ export async function PUT(request: NextRequest) {
     }
     if (descripcion !== undefined) cancha.descripcion = descripcion;
     if (nombre !== undefined) cancha.nombre = nombre;
+    if (coordenadas !== undefined) cancha.coordenadas = coordenadas;
 
     await cancha.save();
 

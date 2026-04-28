@@ -157,11 +157,12 @@ export default function NuevoUsuarioPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("/api/admin/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 

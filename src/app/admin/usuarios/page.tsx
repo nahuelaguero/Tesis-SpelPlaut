@@ -24,16 +24,23 @@ import {
   User,
   Save,
   X,
+  Ban,
+  Trash2,
+  Unlock,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { formatDateSafe, safeText } from "@/lib/safe-format";
 
 interface Usuario {
   _id: string;
-  nombre_completo: string;
-  email: string;
-  telefono: string;
-  rol: "usuario" | "propietario_cancha" | "admin";
-  fecha_registro: string;
+  nombre_completo?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  rol?: "usuario" | "propietario_cancha" | "admin" | string | null;
+  fecha_registro?: string | null;
+  bloqueado?: boolean | null;
+  fecha_bloqueo?: string | null;
+  motivo_bloqueo?: string | null;
 }
 
 interface EditingUser {
@@ -52,6 +59,7 @@ export default function AdminUsuariosPage() {
   const [message, setMessage] = useState("");
   const [editingUser, setEditingUser] = useState<EditingUser | null>(null);
   const [savingUser, setSavingUser] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Verificar permisos
   useEffect(() => {
@@ -74,7 +82,9 @@ export default function AdminUsuariosPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setUsuarios(data.data.usuarios || []);
+          setUsuarios(
+            Array.isArray(data.data?.usuarios) ? data.data.usuarios : []
+          );
         } else {
           setMessage(data.message || "Error al cargar usuarios");
         }
@@ -100,7 +110,9 @@ export default function AdminUsuariosPage() {
       const data = await response.json();
       if (data.success) {
         setUsuarios((prev) =>
-          prev.map((u) => (u._id === userId ? { ...u, rol: newRole as Usuario["rol"] } : u))
+          prev.map((u) =>
+            u._id === userId ? { ...u, rol: newRole as Usuario["rol"] } : u
+          )
         );
         setMessage("Rol actualizado exitosamente.");
       } else {
@@ -110,6 +122,87 @@ export default function AdminUsuariosPage() {
     } catch (error) {
       console.error("Error:", error);
       setMessage("Error al actualizar rol.");
+    }
+  };
+
+  const handleToggleBlock = async (usuario: Usuario) => {
+    const nextBlocked = !usuario.bloqueado;
+    const userName = safeText(usuario.nombre_completo, "este usuario");
+    const confirmMessage = nextBlocked
+      ? `¿Bloquear a ${userName}? No podrá iniciar sesión.`
+      : `¿Desbloquear a ${userName}? Podrá iniciar sesión nuevamente.`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setActionLoading(`block:${usuario._id}`);
+    try {
+      const response = await fetch("/api/admin/usuarios", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          usuario_id: usuario._id,
+          bloqueado: nextBlocked,
+        }),
+      });
+      const data: {
+        success: boolean;
+        message?: string;
+        data?: { usuario?: Usuario };
+      } = await response.json();
+
+      if (response.ok && data.success) {
+        const updatedUser = data.data?.usuario;
+        setUsuarios((prev) =>
+          prev.map((u) =>
+            u._id === usuario._id
+              ? updatedUser || { ...u, bloqueado: nextBlocked }
+              : u
+          )
+        );
+        setMessage(
+          nextBlocked
+            ? "Usuario bloqueado exitosamente."
+            : "Usuario desbloqueado exitosamente."
+        );
+      } else {
+        setMessage(data.message || "Error al actualizar bloqueo.");
+      }
+      setTimeout(() => setMessage(""), 3000);
+    } catch {
+      setMessage("Error al actualizar bloqueo.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteUser = async (usuario: Usuario) => {
+    const userName = safeText(usuario.nombre_completo, "este usuario");
+    if (!window.confirm(`¿Eliminar definitivamente a ${userName}?`)) return;
+
+    setActionLoading(`delete:${usuario._id}`);
+    try {
+      const response = await fetch(
+        `/api/admin/usuarios?usuario_id=${encodeURIComponent(usuario._id)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+      const data: { success: boolean; message?: string } =
+        await response.json();
+
+      if (response.ok && data.success) {
+        setUsuarios((prev) => prev.filter((u) => u._id !== usuario._id));
+        setMessage("Usuario eliminado exitosamente.");
+      } else {
+        setMessage(data.message || "Error al eliminar usuario.");
+      }
+      setTimeout(() => setMessage(""), 3000);
+    } catch {
+      setMessage("Error al eliminar usuario.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -133,7 +226,12 @@ export default function AdminUsuariosPage() {
         setUsuarios((prev) =>
           prev.map((u) =>
             u._id === editingUser._id
-              ? { ...u, nombre_completo: editingUser.nombre_completo, email: editingUser.email, telefono: editingUser.telefono }
+              ? {
+                  ...u,
+                  nombre_completo: editingUser.nombre_completo,
+                  email: editingUser.email,
+                  telefono: editingUser.telefono,
+                }
               : u
           )
         );
@@ -151,22 +249,17 @@ export default function AdminUsuariosPage() {
   };
 
   const filteredUsuarios = usuarios.filter((usuario) => {
+    const search = searchTerm.toLowerCase();
+    const nombre = safeText(usuario.nombre_completo, "");
+    const email = safeText(usuario.email, "");
+    const telefono = safeText(usuario.telefono, "");
+
     return (
-      usuario.nombre_completo
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      usuario.telefono.includes(searchTerm)
+      nombre.toLowerCase().includes(search) ||
+      email.toLowerCase().includes(search) ||
+      telefono.includes(searchTerm)
     );
   });
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-PY", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   const getRoleIcon = (rol: string) => {
     switch (rol) {
@@ -195,14 +288,45 @@ export default function AdminUsuariosPage() {
     return (
       <span
         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          styles[rol as keyof typeof styles]
+          styles[rol as keyof typeof styles] || "bg-gray-100 text-gray-800"
         }`}
       >
         {getRoleIcon(rol)}
-        <span className="ml-1">{labels[rol as keyof typeof labels]}</span>
+        <span className="ml-1">
+          {labels[rol as keyof typeof labels] || "Sin rol"}
+        </span>
       </span>
     );
   };
+
+  const getStatusBadge = (usuario: Usuario) => {
+    if (!usuario.bloqueado) {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+          <Unlock className="h-3 w-3 mr-1" />
+          Activo
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        <Ban className="h-3 w-3 mr-1" />
+        Bloqueado
+      </span>
+    );
+  };
+
+  if (loading || loadingUsuarios) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+      </div>
+    );
+  }
 
   // Verificar permisos
   if (!user || user.rol !== "admin") {
@@ -219,17 +343,6 @@ export default function AdminUsuariosPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  if (loading || loadingUsuarios) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        </div>
       </div>
     );
   }
@@ -262,7 +375,10 @@ export default function AdminUsuariosPage() {
               </div>
             </div>
 
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => router.push("/admin/usuarios/nuevo")}
+            >
               <UserPlus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Agregar Usuario</span>
               <span className="sm:hidden">Agregar</span>
@@ -289,7 +405,7 @@ export default function AdminUsuariosPage() {
         </div>
 
         {/* Estadísticas rápidas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-gray-900">
@@ -316,26 +432,45 @@ export default function AdminUsuariosPage() {
               <p className="text-sm text-gray-600">Usuarios</p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">
+                {usuarios.filter((u) => u.bloqueado).length}
+              </div>
+              <p className="text-sm text-gray-600">Bloqueados</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Lista de usuarios */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredUsuarios.map((usuario) => (
-            <Card
-              key={usuario._id}
-              className="hover:shadow-md transition-shadow"
-            >
+          {filteredUsuarios.map((usuario) => {
+            const isCurrentUser = user._id === usuario._id;
+            const blockLoading = actionLoading === `block:${usuario._id}`;
+            const deleteLoading = actionLoading === `delete:${usuario._id}`;
+
+            return (
+              <Card
+                key={usuario._id}
+                className={`hover:shadow-md transition-shadow ${
+                  usuario.bloqueado ? "border-red-200 bg-red-50/40" : ""
+                }`}
+              >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg font-semibold text-gray-900">
-                      {usuario.nombre_completo}
+                      {safeText(usuario.nombre_completo, "Usuario sin nombre")}
                     </CardTitle>
                     <CardDescription className="text-sm text-gray-600 mt-1">
-                      {usuario.email}
+                      {safeText(usuario.email, "Email no disponible")}
                     </CardDescription>
                   </div>
-                  {getRoleBadge(usuario.rol)}
+                  <div className="flex flex-col items-end gap-2">
+                    {getRoleBadge(usuario.rol || "")}
+                    {getStatusBadge(usuario)}
+                  </div>
                 </div>
               </CardHeader>
 
@@ -391,22 +526,28 @@ export default function AdminUsuariosPage() {
                   <div className="space-y-3">
                     <div className="flex items-center text-sm text-gray-600">
                       <span className="font-medium mr-2">Teléfono:</span>
-                      {usuario.telefono}
+                      {safeText(usuario.telefono, "No disponible")}
                     </div>
 
                     <div className="flex items-center text-sm text-gray-600">
                       <span className="font-medium mr-2">Registro:</span>
-                      {formatDate(usuario.fecha_registro)}
+                      {formatDateSafe(usuario.fecha_registro)}
                     </div>
+
+                    {usuario.bloqueado && (
+                      <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                        Bloqueado: {formatDateSafe(usuario.fecha_bloqueo)}
+                      </div>
+                    )}
 
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setEditingUser({
                         _id: usuario._id,
-                        nombre_completo: usuario.nombre_completo,
-                        email: usuario.email,
-                        telefono: usuario.telefono,
+                        nombre_completo: safeText(usuario.nombre_completo, ""),
+                        email: safeText(usuario.email, ""),
+                        telefono: safeText(usuario.telefono, ""),
                       })}
                       className="w-full text-xs"
                     >
@@ -414,15 +555,51 @@ export default function AdminUsuariosPage() {
                       Editar datos
                     </Button>
 
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleToggleBlock(usuario)}
+                        disabled={Boolean(actionLoading) || isCurrentUser}
+                        className={
+                          usuario.bloqueado
+                            ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                            : "text-amber-700 border-amber-200 hover:bg-amber-50"
+                        }
+                      >
+                        {usuario.bloqueado ? (
+                          <Unlock className="h-3 w-3 mr-1" />
+                        ) : (
+                          <Ban className="h-3 w-3 mr-1" />
+                        )}
+                        {blockLoading
+                          ? "..."
+                          : usuario.bloqueado
+                            ? "Desbloquear"
+                            : "Bloquear"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleDeleteUser(usuario)}
+                        disabled={Boolean(actionLoading) || isCurrentUser}
+                        className="text-red-700 border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        {deleteLoading ? "..." : "Eliminar"}
+                      </Button>
+                    </div>
+
                     <div className="pt-2 border-t border-gray-200">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Cambiar Rol:
                       </label>
                       <select
-                        value={usuario.rol}
+                        value={usuario.rol || "usuario"}
                         onChange={(e) =>
                           handleRoleChange(usuario._id, e.target.value)
                         }
+                        disabled={Boolean(actionLoading) || isCurrentUser}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       >
                         <option value="usuario">Usuario</option>
@@ -436,7 +613,8 @@ export default function AdminUsuariosPage() {
                 )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
 
         {filteredUsuarios.length === 0 && (

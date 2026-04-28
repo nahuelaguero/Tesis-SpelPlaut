@@ -47,6 +47,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   const checkAuth = useCallback(async () => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setUser(null);
+      setLoading(false);
+      setInitialCheckDone(true);
+      return;
+    }
+
     try {
       const response = await fetch("/api/auth/me", {
         method: "GET",
@@ -63,8 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         setUser(null);
       }
-    } catch (error) {
-      console.error("Error verificando autenticación:", error);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -97,10 +103,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   useEffect(() => {
-    // Verificación inmediata sin delay
-    if (!initialCheckDone) {
-      checkAuth();
-    }
+    if (initialCheckDone) return;
+
+    void checkAuth();
   }, [initialCheckDone, checkAuth]);
 
   const value: AuthContextType = {

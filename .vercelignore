@@ -1,0 +1,15 @@
+.git
+.next
+.next_backup_*
+.node_modules_old
+.venv-docx
+node_modules
+artifacts
+coverage
+docs
+mockups-temp
+scripts/stress-tests/results
+test-results
+*.log
+*.tsbuildinfo
+public/workbox-*.js

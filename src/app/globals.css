@@ -1,5 +1,4 @@
-@import "tailwindcss";
-@import "tailwindcss/utilities";
+@import "tailwindcss" source("..");
 @import "leaflet/dist/leaflet.css";
 
 @media print {
@@ -49,8 +48,8 @@
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 /* Dark mode disabled by user request */

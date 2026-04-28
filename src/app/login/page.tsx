@@ -98,7 +98,7 @@ export default function LoginPage() {
           if (responseData.user) {
             login(responseData.user);
           }
-          router.push("/");
+          router.push("/dashboard");
         }
       } else {
         setError(data.message || "Error al iniciar sesión");
@@ -195,7 +195,7 @@ export default function LoginPage() {
         if (responseData.user) {
           login(responseData.user);
         }
-        router.push("/");
+        router.push("/dashboard");
       } else {
         setError(data.message || "Código 2FA incorrecto");
       }

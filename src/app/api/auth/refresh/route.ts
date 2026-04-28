@@ -62,6 +62,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (usuario.bloqueado) {
+      const response = NextResponse.json(
+        createErrorResponse(
+          new AuthenticationError("Usuario bloqueado. Contacta al administrador")
+        ),
+        { status: 403, headers }
+      );
+      response.cookies.set("accessToken", "", { maxAge: 0 });
+      response.cookies.set("refreshToken", "", { maxAge: 0 });
+      response.cookies.set("auth-token", "", { maxAge: 0 });
+      return response;
+    }
+
     // Generar nuevos tokens
     const tokenPair = generateTokenPair({
       userId: usuario._id.toString(),

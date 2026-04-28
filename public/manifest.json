@@ -10,22 +10,6 @@
   "scope": "/",
   "lang": "es",
   "categories": ["sports", "lifestyle", "business"],
-  "screenshots": [
-    {
-      "src": "/screenshots/mobile-1.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Vista principal de canchas"
-    },
-    {
-      "src": "/screenshots/desktop-1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard de administración"
-    }
-  ],
   "icons": [
     {
       "src": "/icons/icon-144x144.png",

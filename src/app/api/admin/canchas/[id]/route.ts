@@ -5,6 +5,25 @@ import "@/models/Usuario"; // Registrar schema para populate("propietario_id")
 import { requireAdmin, isValidObjectId } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 
+function normalizeCoordinates(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const latitude = Number((value as { latitude?: unknown }).latitude);
+  const longitude = Number((value as { longitude?: unknown }).longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return { latitude, longitude };
+}
+
 // Obtener una cancha específica
 export async function GET(
   request: NextRequest,
@@ -115,6 +134,7 @@ export async function PUT(
       disponible,
       imagenes,
       propietario_id,
+      coordenadas,
     } = body;
 
     // Validaciones básicas
@@ -190,6 +210,17 @@ export async function PUT(
       );
     }
 
+    const normalizedCoordinates = normalizeCoordinates(coordenadas);
+    if (coordenadas !== undefined && !normalizedCoordinates) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Las coordenadas de la cancha son inválidas",
+        },
+        { status: 400 }
+      );
+    }
+
     // Verificar que la cancha existe
     const canchaExistente = await Cancha.findById(id);
     if (!canchaExistente) {
@@ -239,6 +270,7 @@ export async function PUT(
     if (disponible !== undefined) updateData.disponible = disponible;
     if (imagenes !== undefined) updateData.imagenes = imagenes;
     if (propietario_id !== undefined) updateData.propietario_id = propietario_id;
+    if (coordenadas !== undefined) updateData.coordenadas = normalizedCoordinates;
 
     // Actualizar la cancha
     const canchaActualizada = await Cancha.findByIdAndUpdate(id, updateData, {

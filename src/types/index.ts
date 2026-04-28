@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import type { ObjectId } from "mongodb";
 
 export type DiaSemana =
   | "lunes"
@@ -26,6 +26,11 @@ export interface PrecioHorario {
   precio_por_hora: number;
 }
 
+export interface Coordenadas {
+  latitude: number;
+  longitude: number;
+}
+
 export interface Usuario {
   _id?: ObjectId;
   nombre_completo: string;
@@ -43,6 +48,9 @@ export interface Usuario {
   fecha_registro: Date;
   reset_password_token?: string;
   reset_password_expires?: Date;
+  bloqueado?: boolean;
+  fecha_bloqueo?: Date;
+  motivo_bloqueo?: string;
   push_subscriptions?: {
     endpoint: string;
     expirationTime?: number | null;
@@ -57,6 +65,7 @@ export interface Cancha {
   descripcion: string;
   tipo_cancha: string;
   ubicacion: string;
+  coordenadas?: Coordenadas;
   imagenes: string[];
   precio_por_hora: number;
   precios_por_horario?: PrecioHorario[];

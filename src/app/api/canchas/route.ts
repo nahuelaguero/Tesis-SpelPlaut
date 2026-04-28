@@ -5,6 +5,7 @@ import Resena from "@/models/Resena";
 import { requireAdmin } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 import { getMinimumPrice } from "@/lib/pricing";
+import { geocodeAddress } from "@/lib/geolocation-utils";
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
 
     const canchasFromDB = await Cancha.find({ disponible: true })
       .select(
-        "nombre descripcion tipo_cancha ubicacion precio_por_hora precios_por_horario capacidad_jugadores disponible horario_apertura horario_cierre imagenes intervalo_reserva_minutos aprobacion_automatica"
+        "nombre descripcion tipo_cancha ubicacion coordenadas precio_por_hora precios_por_horario capacidad_jugadores disponible horario_apertura horario_cierre imagenes intervalo_reserva_minutos aprobacion_automatica"
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -45,34 +46,53 @@ export async function GET() {
     };
 
     // Mapear los campos de la base de datos al formato esperado por el frontend
-    const canchas = canchasFromDB.map((cancha) => {
-      const stats = resenasMap[(cancha._id as { toString(): string }).toString()];
-      const rawImages: string[] = cancha.imagenes || [];
-      const proxyImages = rawImages.map(toProxyUrl);
-      return {
-        _id: cancha._id,
-        nombre: cancha.nombre,
-        tipo: deporteMap[cancha.tipo_cancha] || cancha.tipo_cancha,
-        ubicacion: cancha.ubicacion,
-        precio_por_hora: Number(cancha.precio_por_hora) || 0,
-        precio_desde: getMinimumPrice({
+    const canchas = await Promise.all(
+      canchasFromDB.map(async (cancha) => {
+        const stats = resenasMap[(cancha._id as { toString(): string }).toString()];
+        const rawImages: string[] = cancha.imagenes || [];
+        const proxyImages = rawImages.map(toProxyUrl);
+        let coordinates = cancha.coordenadas || undefined;
+
+        if (!coordinates && cancha.ubicacion) {
+          const geocodedCoordinates = await geocodeAddress(cancha.ubicacion);
+
+          if (geocodedCoordinates) {
+            coordinates = geocodedCoordinates;
+            void Cancha.updateOne(
+              { _id: cancha._id },
+              { $set: { coordenadas: geocodedCoordinates } }
+            ).catch((updateError) => {
+              console.warn("No se pudo persistir coordenadas backfill:", updateError);
+            });
+          }
+        }
+
+        return {
+          _id: cancha._id,
+          nombre: cancha.nombre,
+          tipo: deporteMap[cancha.tipo_cancha] || cancha.tipo_cancha,
+          ubicacion: cancha.ubicacion,
+          coordenadas: coordinates,
           precio_por_hora: Number(cancha.precio_por_hora) || 0,
-          precios_por_horario: cancha.precios_por_horario || [],
-        }),
-        capacidad_maxima: Number(cancha.capacidad_jugadores) || 0,
-        disponible: cancha.disponible,
-        descripcion: cancha.descripcion,
-        servicios: [],
-        imagenes: proxyImages,
-        horario_apertura: cancha.horario_apertura,
-        horario_cierre: cancha.horario_cierre,
-        intervalo_reserva_minutos: cancha.intervalo_reserva_minutos || 60,
-        aprobacion_automatica: cancha.aprobacion_automatica !== false,
-        imagen_url: proxyImages[0] || null,
-        valoracion: stats?.promedio ?? null,
-        total_resenas: stats?.total ?? 0,
-      };
-    });
+          precio_desde: getMinimumPrice({
+            precio_por_hora: Number(cancha.precio_por_hora) || 0,
+            precios_por_horario: cancha.precios_por_horario || [],
+          }),
+          capacidad_maxima: Number(cancha.capacidad_jugadores) || 0,
+          disponible: cancha.disponible,
+          descripcion: cancha.descripcion,
+          servicios: [],
+          imagenes: proxyImages,
+          horario_apertura: cancha.horario_apertura,
+          horario_cierre: cancha.horario_cierre,
+          intervalo_reserva_minutos: cancha.intervalo_reserva_minutos || 60,
+          aprobacion_automatica: cancha.aprobacion_automatica !== false,
+          imagen_url: proxyImages[0] || null,
+          valoracion: stats?.promedio ?? null,
+          total_resenas: stats?.total ?? 0,
+        };
+      })
+    );
 
     const response = NextResponse.json<ApiResponse>({
       success: true,

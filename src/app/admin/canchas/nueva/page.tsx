@@ -25,12 +25,19 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { ImageUploader } from "@/components/forms/ImageUploader";
+import { LocationPicker } from "@/components/maps/LocationPicker";
+
+interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
 
 interface FormData {
   nombre: string;
   descripcion: string;
   tipo_cancha: string;
   ubicacion: string;
+  coordenadas: Coordinates | null;
   precio_por_hora: string;
   capacidad_jugadores: string;
   horario_apertura: string;
@@ -45,6 +52,7 @@ export default function NuevaCanchaPage() {
     descripcion: "",
     tipo_cancha: "",
     ubicacion: "",
+    coordenadas: null,
     precio_por_hora: "",
     capacidad_jugadores: "",
     horario_apertura: "06:00",
@@ -54,6 +62,7 @@ export default function NuevaCanchaPage() {
   const [propietarioId, setPropietarioId] = useState("");
   const [propietarios, setPropietarios] = useState<{ _id: string; nombre_completo: string; email: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [resolvingLocation, setResolvingLocation] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -124,6 +133,62 @@ export default function NuevaCanchaPage() {
     return null;
   };
 
+  const handleLocationSelected = (location: {
+    address: string;
+    coordinates: Coordinates;
+  }) => {
+    setFormData((prev) => ({
+      ...prev,
+      ubicacion: location.address,
+      coordenadas: location.coordinates,
+    }));
+  };
+
+  const resolveCoordinates = async () => {
+    if (formData.coordenadas) {
+      return formData.coordenadas;
+    }
+
+    if (!formData.ubicacion.trim()) {
+      return null;
+    }
+
+    try {
+      setResolvingLocation(true);
+
+      const response = await fetch(
+        `/api/ubicaciones/geocode?q=${encodeURIComponent(formData.ubicacion.trim())}`,
+        {
+          credentials: "include",
+        }
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "No se pudo validar la ubicación.");
+      }
+
+      const coordinates = data.data.location.coordinates as Coordinates;
+
+      setFormData((prev) => ({
+        ...prev,
+        ubicacion: data.data.location.address,
+        coordenadas: coordinates,
+      }));
+
+      return coordinates;
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo validar la ubicación."
+      );
+      return null;
+    } finally {
+      setResolvingLocation(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -137,8 +202,17 @@ export default function NuevaCanchaPage() {
     setMessage("");
 
     try {
+      const coordenadas = await resolveCoordinates();
+      if (!coordenadas) {
+        setMessage(
+          "No se pudo validar la ubicación. Busca la cancha en el mapa o usa tu ubicación actual."
+        );
+        return;
+      }
+
       const payload = {
         ...formData,
+        coordenadas,
         precio_por_hora: parseFloat(formData.precio_por_hora),
         capacidad_jugadores: parseInt(formData.capacidad_jugadores),
         disponible: true,
@@ -167,6 +241,7 @@ export default function NuevaCanchaPage() {
           descripcion: "",
           tipo_cancha: "",
           ubicacion: "",
+          coordenadas: null,
           precio_por_hora: "",
           capacidad_jugadores: "",
           horario_apertura: "06:00",
@@ -188,6 +263,17 @@ export default function NuevaCanchaPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-24">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   // Verificar permisos
   if (!user || user.rol !== "admin") {
     return (
@@ -203,17 +289,6 @@ export default function NuevaCanchaPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center py-24">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-        </div>
       </div>
     );
   }
@@ -353,41 +428,12 @@ export default function NuevaCanchaPage() {
                     placeholder="Ej: Av. Mariscal López 123, Asunción, Paraguay"
                     required
                   />
-                  <div className="mt-2 text-xs space-y-1">
-                    <p className="text-blue-600 font-medium">
-                      📍 Formatos aceptados:
-                    </p>
-                    <div className="text-gray-600 space-y-1">
-                      <p>
-                        •{" "}
-                        <span className="font-mono bg-gray-100 px-1 rounded">
-                          Dirección completa + ciudad + departamento
-                        </span>
-                      </p>
-                      <p>
-                        •{" "}
-                        <span className="font-mono bg-gray-100 px-1 rounded">
-                          Nombre del lugar + referencias
-                        </span>
-                      </p>
-                      <p>
-                        •{" "}
-                        <span className="font-mono bg-gray-100 px-1 rounded">
-                          Coordenadas GPS (Lat, Lng)
-                        </span>
-                      </p>
-                    </div>
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700">
-                      <p className="font-medium">💡 Ejemplos:</p>
-                      <p>
-                        • &quot;Estadio Municipal, Loma Plata, Boquerón&quot;
-                      </p>
-                      <p>
-                        • &quot;Av. Central 456, Ciudad del Este, Alto
-                        Paraná&quot;
-                      </p>
-                      <p>• &quot;Lat: -25.2637, Lng: -57.5759&quot;</p>
-                    </div>
+                  <div className="mt-3">
+                    <LocationPicker
+                      defaultLocation={formData.ubicacion}
+                      defaultCoordinates={formData.coordenadas}
+                      onLocationSelect={handleLocationSelected}
+                    />
                   </div>
                 </div>
               </div>
@@ -498,10 +544,12 @@ export default function NuevaCanchaPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || resolvingLocation}
                   className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700"
                 >
-                  {submitting ? "Creando..." : "Crear Cancha"}
+                  {submitting || resolvingLocation
+                    ? "Guardando..."
+                    : "Crear Cancha"}
                 </Button>
               </div>
             </form>

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       { status: 404 }
     );
   }
-  // No exponer hash ni códigos 2FA
+  // No exponer secretos ni datos internos del canal push.
   const userObj =
     typeof (user as unknown as { toJSON?: () => unknown }).toJSON === "function"
       ? (user as unknown as { toJSON: () => unknown }).toJSON()
@@ -41,6 +41,9 @@ export async function GET(request: NextRequest) {
   delete safeUser.contrasena_hash;
   delete safeUser.codigo_2fa_email;
   delete safeUser.codigo_2fa_expira;
+  delete safeUser.reset_password_token;
+  delete safeUser.reset_password_expires;
+  delete safeUser.push_subscriptions;
   return NextResponse.json<ApiResponse>({
     success: true,
     message: "Perfil de usuario",

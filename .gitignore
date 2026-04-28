@@ -80,11 +80,12 @@ Thumbs.db
 data/
 
 # PWA files (generated)
-public/sw.js
 public/workbox-*.js
 
 # Build cache
 .cache/
+.venv-docx/
+.playwright-mcp/
 
 # Temporary test files
 test-results/

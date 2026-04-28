@@ -5,6 +5,97 @@ import { requireAuth } from "@/lib/auth";
 import { ApiResponse } from "@/types";
 import Usuario from "@/models/Usuario";
 
+function toProxyUrl(url: string): string {
+  if (!url || url.startsWith("/")) return url;
+  return `/api/images?key=${encodeURIComponent(url)}`;
+}
+
+function normalizeCoordinates(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const latitude = Number((value as { latitude?: unknown }).latitude);
+  const longitude = Number((value as { longitude?: unknown }).longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return { latitude, longitude };
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const userPayload = requireAuth(request);
+    if (!userPayload) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "No autenticado.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const admin = await Usuario.findById(userPayload.userId);
+    if (!admin) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Usuario no encontrado.",
+        },
+        { status: 404 }
+      );
+    }
+
+    if (admin.rol !== "admin") {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Acceso denegado. Solo administradores pueden ver canchas.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const canchas = await Cancha.find({})
+      .populate("propietario_id", "nombre_completo email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      message: "Canchas obtenidas exitosamente.",
+      data: {
+        canchas: canchas.map((cancha) => {
+          const rawImages = Array.isArray(cancha.imagenes) ? cancha.imagenes : [];
+
+          return {
+            ...cancha,
+            imagenes: rawImages.map(toProxyUrl),
+          };
+        }),
+      },
+    });
+  } catch (error) {
+    console.error("Error al listar canchas admin:", error);
+    return NextResponse.json<ApiResponse>(
+      {
+        success: false,
+        message: "Error interno del servidor",
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
@@ -57,6 +148,7 @@ export async function POST(request: NextRequest) {
       imagenes,
       disponible = true,
       propietario_id,
+      coordenadas,
     } = body;
 
     // Validaciones básicas
@@ -142,6 +234,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedCoordinates = normalizeCoordinates(coordenadas);
+    if (coordenadas !== undefined && !normalizedCoordinates) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Las coordenadas de la cancha son inválidas",
+        },
+        { status: 400 }
+      );
+    }
+
     // Verificar que no existe una cancha con el mismo nombre y ubicación
     const existingCancha = await Cancha.findOne({
       nombre: nombre.trim(),
@@ -164,11 +267,12 @@ export async function POST(request: NextRequest) {
       descripcion: descripcion.trim(),
       tipo_cancha,
       ubicacion: ubicacion.trim(),
+      coordenadas: normalizedCoordinates || undefined,
       precio_por_hora: Number(precio_por_hora),
       capacidad_jugadores: Number(capacidad_jugadores),
       horario_apertura,
       horario_cierre,
-      imagenes: imagenes || ["/api/placeholder/600/400"],
+      imagenes: Array.isArray(imagenes) ? imagenes : [],
       disponible,
       propietario_id: propietario_id || admin._id,
     });

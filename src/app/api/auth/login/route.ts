@@ -47,6 +47,17 @@ export async function POST(request: NextRequest) {
       `[LOGIN] Usuario encontrado - ID: ${user._id}, Rol: ${user.rol}, 2FA: ${user.autenticacion_2FA}`
     );
 
+    if (user.bloqueado) {
+      console.log(`[LOGIN] Usuario bloqueado: ${user._id}`);
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Usuario bloqueado. Contacta al administrador.",
+        },
+        { status: 403 }
+      );
+    }
+
     // Verificar contraseña
     const isPasswordValid = await bcrypt.compare(
       password,

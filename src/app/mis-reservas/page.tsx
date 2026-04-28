@@ -54,17 +54,17 @@ import {
 
 interface Reserva {
   _id: string;
-  cancha_id: {
+  cancha_id?: {
     _id: string;
     nombre: string;
     ubicacion: string;
     precio_por_hora?: number;
-  };
+  } | null;
   usuario_id?: {
     _id: string;
     nombre_completo: string;
     email: string;
-  };
+  } | null;
   fecha: string; // YYYY-MM-DD string
   fecha_reserva: string;
   hora_inicio: string;
@@ -74,7 +74,7 @@ interface Reserva {
   estado: "confirmada" | "pendiente" | "pendiente_aprobacion" | "cancelada" | "completada";
   metodo_pago?: string;
   pagado: boolean;
-  createdAt: string;
+  createdAt?: string;
   notas?: string;
 }
 
@@ -115,7 +115,9 @@ export default function MisReservasPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            setReservas(data.data.reservas);
+            setReservas(
+              Array.isArray(data.data?.reservas) ? data.data.reservas : []
+            );
           }
         } else {
           console.error("Error al obtener reservas:", response.statusText);
@@ -219,7 +221,7 @@ export default function MisReservasPage() {
     try {
       // Calcular nueva duración y precio
       const duracion_horas = (finMinutos - inicioMinutos) / 60;
-      const precio_hora = editingReserva.cancha_id.precio_por_hora || 80000;
+      const precio_hora = editingReserva.cancha_id?.precio_por_hora || 80000;
       const nuevo_precio = duracion_horas * precio_hora;
 
       const response = await fetch(`/api/reservas/${editingReserva._id}`, {
@@ -266,7 +268,11 @@ export default function MisReservasPage() {
 
   const handleSubmitReview = async () => {
     if (!reviewReserva) return;
-    
+    if (!reviewReserva.cancha_id?._id) {
+      alert("No se puede enviar reseña: cancha no disponible.");
+      return;
+    }
+
     setActionLoading(reviewReserva._id);
     try {
       const response = await fetch("/api/resenas", {
@@ -306,6 +312,7 @@ export default function MisReservasPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
     return date.toLocaleDateString("es-ES", {
       weekday: "long",
       year: "numeric",
@@ -343,6 +350,20 @@ export default function MisReservasPage() {
     // Use the YYYY-MM-DD string field, fallback to parsing fecha_reserva
     if (reserva.fecha && /^\d{4}-\d{2}-\d{2}$/.test(reserva.fecha)) return reserva.fecha;
     return reserva.fecha_reserva?.slice(0, 10) || "";
+  };
+
+  const getCanchaName = (reserva: Reserva) =>
+    reserva.cancha_id?.nombre || "Cancha no disponible";
+
+  const getCanchaLocation = (reserva: Reserva) =>
+    reserva.cancha_id?.ubicacion || "Ubicación no disponible";
+
+  const getCreatedAtLabel = (reserva: Reserva) => {
+    const source = reserva.createdAt || reserva.fecha_reserva;
+    if (!source) return "Fecha de creación no disponible";
+    const parsed = new Date(source);
+    if (Number.isNaN(parsed.getTime())) return "Fecha de creación no disponible";
+    return parsed.toLocaleDateString("es-ES");
   };
 
   const canCancelReservation = (reserva: Reserva) => {
@@ -465,11 +486,11 @@ export default function MisReservasPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-xl font-bold text-gray-900">
-                          {reserva.cancha_id.nombre}
+                          {getCanchaName(reserva)}
                         </CardTitle>
                         <CardDescription className="flex items-center text-gray-700 font-medium mt-1">
                           <MapPin className="h-4 w-4 mr-1" />
-                          {reserva.cancha_id.ubicacion}
+                          {getCanchaLocation(reserva)}
                         </CardDescription>
                         {/* Mostrar información del usuario solo para admins */}
                         {user?.rol === "admin" && reserva.usuario_id && (
@@ -548,10 +569,7 @@ export default function MisReservasPage() {
                         {formatPrice(reserva.precio_total)}
                       </div>
                       <div className="text-sm text-gray-700 font-medium">
-                        Reservado el{" "}
-                        {new Date(reserva.createdAt).toLocaleDateString(
-                          "es-ES"
-                        )}
+                        Reservado el {getCreatedAtLabel(reserva)}
                       </div>
                     </div>
 
@@ -787,7 +805,8 @@ export default function MisReservasPage() {
                             <DialogHeader>
                               <DialogTitle>Dejar Reseña</DialogTitle>
                               <DialogDescription>
-                                ¿Qué te pareció tu experiencia en {reserva.cancha_id.nombre}?
+                                ¿Qué te pareció tu experiencia en{" "}
+                                {reserva.cancha_id?.nombre || "esta cancha"}?
                               </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">

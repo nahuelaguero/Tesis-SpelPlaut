@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Usuario } from "@/types";
+import type { Usuario } from "@/types";
 
 const usuarioSchema = new mongoose.Schema<Usuario>(
   {
@@ -62,6 +62,20 @@ const usuarioSchema = new mongoose.Schema<Usuario>(
     },
     reset_password_expires: {
       type: Date,
+      default: null,
+    },
+    bloqueado: {
+      type: Boolean,
+      default: false,
+    },
+    fecha_bloqueo: {
+      type: Date,
+      default: null,
+    },
+    motivo_bloqueo: {
+      type: String,
+      trim: true,
+      maxlength: 300,
       default: null,
     },
     push_subscriptions: {

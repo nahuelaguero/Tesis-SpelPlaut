@@ -17,17 +17,22 @@
     "paraguay"
   ],
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:fast": "next dev --turbopack",
-    "dev:check": "bun run lint && bun run type-check && next dev --turbopack",
-    "dev:full": "bun run lint && bun run type-check && bun run build && next dev --turbopack",
-    "build": "next build",
-    "build:check": "bun run lint && bun run type-check && next build",
-    "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "dev": "./scripts/next-with-node20.sh dev --disable-source-maps",
+    "dev:fast": "./scripts/next-with-node20.sh dev --disable-source-maps",
+    "dev:check": "bun run lint && bun run type-check && ./scripts/next-with-node20.sh dev --disable-source-maps",
+    "dev:full": "bun run lint && bun run type-check && bun run build && ./scripts/next-with-node20.sh dev --disable-source-maps",
+    "build": "./scripts/next-with-node20.sh build",
+    "build:check": "bun run lint && bun run type-check && ./scripts/next-with-node20.sh build",
+    "start": "./scripts/next-with-node20.sh start",
+    "lint": "eslint src next.config.js eslint.config.mjs postcss.config.mjs scripts/check-pwa.mjs",
+    "lint:fix": "eslint src next.config.js eslint.config.mjs postcss.config.mjs scripts/check-pwa.mjs --fix",
     "type-check": "tsc --noEmit",
+    "pwa:check": "node scripts/check-pwa.mjs",
+    "verify:local": "bun run pwa:check && bun run build",
     "seed": "tsx scripts/seed.ts",
     "keep-krahnfield": "tsx scripts/keep-only-krahnfield.ts",
     "restore-canchas": "tsx scripts/keep-only-krahnfield.ts --restore",
@@ -79,7 +84,6 @@
     "zod": "^3.25.51"
   },
   "devDependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",

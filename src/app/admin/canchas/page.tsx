@@ -69,7 +69,7 @@ export default function AdminCanchasPage() {
 
   const loadCanchas = async () => {
     try {
-      const response = await fetch("/api/canchas", {
+      const response = await fetch("/api/admin/canchas", {
         credentials: "include",
       });
 
@@ -153,6 +153,17 @@ export default function AdminCanchasPage() {
     );
   };
 
+  if (loading || loadingCanchas) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+      </div>
+    );
+  }
+
   // Verificar permisos
   if (!user || user.rol !== "admin") {
     return (
@@ -168,17 +179,6 @@ export default function AdminCanchasPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  if (loading || loadingCanchas) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        </div>
       </div>
     );
   }

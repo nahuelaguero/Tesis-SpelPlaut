@@ -28,6 +28,15 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+    if (user.bloqueado) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          message: "Usuario bloqueado. Contacta al administrador.",
+        },
+        { status: 403 }
+      );
+    }
     const valid = await validate2FACode(user, codigo_2fa);
     if (!valid) {
       return NextResponse.json<ApiResponse>(

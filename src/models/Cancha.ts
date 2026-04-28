@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Cancha } from "@/types";
+import type { Cancha } from "@/types";
 import { validatePricingRules } from "@/lib/pricing";
 
 const precioHorarioSchema = new mongoose.Schema(
@@ -68,6 +68,18 @@ const canchaSchema = new mongoose.Schema<Cancha>(
       type: String,
       required: [true, "La ubicación es requerida"],
       trim: true,
+    },
+    coordenadas: {
+      latitude: {
+        type: Number,
+        min: [-90, "La latitud es inválida"],
+        max: [90, "La latitud es inválida"],
+      },
+      longitude: {
+        type: Number,
+        min: [-180, "La longitud es inválida"],
+        max: [180, "La longitud es inválida"],
+      },
     },
     imagenes: [
       {
@@ -191,6 +203,7 @@ canchaSchema.index({ tipo_cancha: 1, disponible: 1 });
 canchaSchema.index({ ubicacion: 1 });
 canchaSchema.index({ disponible: 1, createdAt: -1 });
 canchaSchema.index({ propietario_id: 1, createdAt: -1 });
+canchaSchema.index({ "coordenadas.latitude": 1, "coordenadas.longitude": 1 });
 
 export default mongoose.models.Cancha ||
   mongoose.model<Cancha>("Cancha", canchaSchema, "canchas");

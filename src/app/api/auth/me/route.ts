@@ -1,25 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import { requireAuth } from "@/lib/auth";
-import { ApiResponse } from "@/types";
-import Usuario from "@/models/Usuario";
+import { jwtVerify } from "jose";
+import type { ApiResponse } from "@/types";
 
-export async function GET(request: NextRequest) {
-  await connectDB();
+const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
 
-  // Para verificar sesión, solo necesitamos autenticación básica (sin 2FA)
-  const userPayload = requireAuth(request);
-  if (!userPayload) {
-    return NextResponse.json<ApiResponse>(
-      {
-        success: false,
-        message: "No autenticado.",
-      },
-      { status: 401 }
-    );
+type AuthLookup =
+  | { status: "authenticated"; userId: string }
+  | { status: "anonymous" }
+  | { status: "invalid" };
+
+async function getAuthenticatedUser(
+  request: NextRequest
+): Promise<AuthLookup> {
+  const token = request.cookies.get("auth-token")?.value;
+  if (!token) {
+    return { status: "anonymous" };
   }
 
   try {
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+
+    if (typeof payload.userId === "string") {
+      return { status: "authenticated", userId: payload.userId };
+    }
+
+    return { status: "invalid" };
+  } catch {
+    return { status: "invalid" };
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const userPayload = await getAuthenticatedUser(request);
+
+  if (userPayload.status === "anonymous") {
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      message: "Sin sesión activa.",
+      data: null,
+    });
+  }
+
+  if (userPayload.status === "invalid") {
+    const response = NextResponse.json<ApiResponse>({
+      success: true,
+      message: "Sesión inválida limpiada.",
+      data: null,
+    });
+    response.cookies.delete("auth-token");
+    return response;
+  }
+
+  try {
+    const [{ default: connectDB }, { default: Usuario }] = await Promise.all([
+      import("@/lib/mongodb"),
+      import("@/models/Usuario"),
+    ]);
+
+    await connectDB();
+
     // Buscar el usuario en la base de datos
     const user = await Usuario.findById(userPayload.userId);
     if (!user) {
@@ -32,12 +72,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // No exponer hash ni códigos 2FA
+    if (user.bloqueado) {
+      const response = NextResponse.json<ApiResponse>({
+        success: true,
+        message: "Usuario bloqueado. Sesión cerrada.",
+        data: null,
+      });
+      response.cookies.delete("auth-token");
+      return response;
+    }
+
+    // No exponer secretos ni datos internos del canal push.
     const userObj = user.toJSON();
     const safeUser = userObj as Record<string, unknown>;
     delete safeUser.contrasena_hash;
     delete safeUser.codigo_2fa_email;
     delete safeUser.codigo_2fa_expira;
+    delete safeUser.reset_password_token;
+    delete safeUser.reset_password_expires;
+    delete safeUser.push_subscriptions;
 
     return NextResponse.json<ApiResponse>({
       success: true,

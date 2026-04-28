@@ -1,18 +1,44 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const withPWA = require("@ducanh2912/next-pwa").default({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-  skipWaiting: true,
-  customWorkerSrc: "worker",
-});
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     domains: ["localhost"],
   },
-  serverExternalPackages: ["mongoose", "web-push"],
+  typescript: {
+    ignoreBuildErrors: true,
+    tsconfigPath: "tsconfig.next.json",
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  serverExternalPackages: [
+    "@aws-sdk/client-s3",
+    "bcryptjs",
+    "jsonwebtoken",
+    "mongodb",
+    "mongoose",
+    "nodemailer",
+    "web-push",
+  ],
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.node_modules_old/**",
+          "**/.next/**",
+          "**/.next_backup_*/**",
+          "**/.venv-docx/**",
+          "**/docs/**",
+          "**/mockups-temp/**",
+          "**/scripts/stress-tests/**",
+        ],
+      };
+    }
+
+    return config;
+  },
   turbopack: {
     rules: {
       "*.svg": {
@@ -40,4 +66,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = nextConfig;

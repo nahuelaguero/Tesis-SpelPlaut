@@ -39,11 +39,11 @@ interface DisponibilidadItem {
 }
 
 export default function DisponibilidadPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [disponibilidad, setDisponibilidad] = useState<DisponibilidadItem[]>(
     []
   );
-  const [loading, setLoading] = useState(true);
+  const [loadingDisponibilidad, setLoadingDisponibilidad] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [canchaId, setCanchaId] = useState<string | null>(null);
@@ -57,8 +57,13 @@ export default function DisponibilidadPage() {
   useEffect(() => {
     if (user && (user.rol === "propietario_cancha" || user.rol === "admin")) {
       loadDisponibilidad();
+      return;
     }
-  }, [user]);
+
+    if (!authLoading) {
+      setLoadingDisponibilidad(false);
+    }
+  }, [user, authLoading]);
 
   const loadDisponibilidad = async () => {
     try {
@@ -96,7 +101,7 @@ export default function DisponibilidadPage() {
       console.error("Error:", error);
       setMessage("Error de conexión al cargar disponibilidad");
     } finally {
-      setLoading(false);
+      setLoadingDisponibilidad(false);
     }
   };
 
@@ -177,6 +182,14 @@ export default function DisponibilidadPage() {
     });
   };
 
+  if (authLoading || loadingDisponibilidad) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
   // Verificar permisos
   if (!user || (user.rol !== "propietario_cancha" && user.rol !== "admin")) {
     return (
@@ -192,14 +205,6 @@ export default function DisponibilidadPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
       </div>
     );
   }
