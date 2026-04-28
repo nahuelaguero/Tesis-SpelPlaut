@@ -203,6 +203,7 @@ export default function MiCanchaPage() {
                 const rows = reservas_recientes.map((r) => ({
                   cancha: r.cancha_nombre,
                   usuario: r.usuario.nombre_completo,
+                  email: r.usuario.email || "Sin email",
                   telefono: r.usuario.telefono || "Sin teléfono",
                   fecha: r.fecha,
                   hora_inicio: r.hora_inicio,
@@ -447,6 +448,7 @@ export default function MiCanchaPage() {
                   </h4>
                   <p className="text-sm text-gray-600">
                     {reserva.usuario.nombre_completo}
+                    {reserva.usuario.email && ` · ✉️ ${reserva.usuario.email}`}
                     {reserva.usuario.telefono && ` · 📞 ${reserva.usuario.telefono}`}
                   </p>
                   <p className="text-sm text-gray-500">
