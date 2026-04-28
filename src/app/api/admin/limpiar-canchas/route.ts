@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Cancha from "@/models/Cancha";
 import Reserva from "@/models/Reserva";
 import Resena from "@/models/Resena";
-import { requireAuth } from "@/lib/auth";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await connectDB();
 
